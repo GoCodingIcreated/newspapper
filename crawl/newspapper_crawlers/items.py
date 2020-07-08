@@ -19,9 +19,13 @@ class StoreItem(scrapy.Item):
     source_crawler = scrapy.Field()
     name = scrapy.Field()
     description = scrapy.Field()
+    last_chapter_index = scrapy.Field()
     last_modify_dttm = scrapy.Field()
     processed_dttm = scrapy.Field()
 
 
 class AuthorTodayItem(StoreItem):
+    pass
+
+class WebnoveItem(StoreItem):
     pass

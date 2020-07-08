@@ -11,6 +11,7 @@ import logging
 import json
 
 
+
 class SqliteStorePipeline(object):
     logger = logging.getLogger("SqliteStorePipeline")
     TABLE_NAME = "info"

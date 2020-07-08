@@ -2,13 +2,18 @@ import scrapy
 import json
 import datetime
 
-from newspapper_crawlers.items import AuthorTodayItem
+from ..items import AuthorTodayItem
+import sys
+import os.path
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../../'))
+from common.timestamp import current_timestamp
+from common.timestamp import convert_gmt_zero_to_msk
 
 class AuthorTodaySpider(scrapy.Spider):
     name = "author_today"
 
-    MSK_TIMEDIF = 3
+
     AUTHOR_TODAY_META_CSS_PATH = "div.panel-body script::text"
     AUTHOR_TODAY_META_CSS_PATH_LIST_NUM = 0
     AUTHOR_TODAY_NAME_FIELD = "name"
@@ -36,24 +41,14 @@ class AuthorTodaySpider(scrapy.Spider):
         # print(resp.css("a::text").get())
         # print("---")
 
-
         self.logger.debug("Response: %s" % s)
         meta_info = json.loads(s)
         yield AuthorTodayItem(url=response.url,
                               source_crawler=self.name,
                               name=meta_info[self.AUTHOR_TODAY_NAME_FIELD],
-                              # description=None,
-                              last_modify_dttm=self.convert_gmt_zero_to_msk(meta_info[self.AUTHOR_TODAY_LAST_UPDATE_DTTM_FIELD]),
-                              processed_dttm=self.current_timestamp())
+                              description=meta_info["description"],
+                              last_modify_dttm=convert_gmt_zero_to_msk(meta_info[self.AUTHOR_TODAY_LAST_UPDATE_DTTM_FIELD]),
+                              processed_dttm=current_timestamp())
 
-    def current_timestamp(self):
-        now = datetime.datetime.now()
-        formatted = now.strftime("%Y-%m-%d %H:%M:%S")
-        return formatted
 
-    def convert_gmt_zero_to_msk(self, dttm):
-        if dttm[-1] == "Z":
-            new_time = datetime.datetime.strptime(dttm, "%Y-%m-%dT%H:%M:%S.%fZ")
-            delta = datetime.timedelta(hours=self.MSK_TIMEDIF)
-            dttm = datetime.datetime.strftime(new_time + delta, "%Y-%m-%d %H:%M:%S")
-        return dttm
+
