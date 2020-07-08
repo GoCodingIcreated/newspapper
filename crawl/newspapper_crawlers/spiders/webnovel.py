@@ -22,9 +22,8 @@ class WebnovelSpider(scrapy.Spider):
 
     def parse(self, response):
         data = response.css("script").re_first(r"g_data.book = (.*);")
-        print("DATA BEFORE: " + data)
+        self.logger.debug("Response: %s" % data)
         data = data.replace("\\ ", " ")
-        print("DATA AFTER: " + data)
         meta = json.loads(data)
         yield WebnoveItem(url=response.url,
                           source_crawler=self.name,

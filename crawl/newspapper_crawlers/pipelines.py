@@ -84,7 +84,13 @@ class JsonDumpPipeline(object):
     def open_spider(self, spider):
         self.logger.info("Opening spider " + spider.name)
         filename = self.LOG_PATH + spider.name + ".json"
-        self.output[spider.name] = open(filename, "w", encoding='utf8')
+        mode = "w"
+
+        # TODO: REPLACE THIS SHIT WITH GETTING SETTING FROM SETTINGS FILE
+        if spider.name == "webnovel":
+            mode = "a"
+            
+        self.output[spider.name] = open(filename, mode, encoding='utf8')
 
     def close_spider(self, spider):
         self.logger.info("Closing spider " + spider.name)
