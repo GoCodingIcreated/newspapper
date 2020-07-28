@@ -10,7 +10,12 @@ def current_timestamp():
 
 def convert_gmt_zero_to_msk(dttm):
     if dttm[-1] == "Z":
-        new_time = datetime.datetime.strptime(dttm, "%Y-%m-%dT%H:%M:%S.%fZ")
+        try:
+            new_time = datetime.datetime.strptime(dttm, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            new_time = datetime.datetime.strptime(dttm, "%Y-%m-%dT%H:%M:%SZ")
         delta = datetime.timedelta(hours=MSK_GMT_TIMEDIF)
         dttm = datetime.datetime.strftime(new_time + delta, "%Y-%m-%d %H:%M:%S")
     return dttm
+
+
