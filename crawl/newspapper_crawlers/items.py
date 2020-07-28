@@ -15,17 +15,24 @@ class TutorialItem(scrapy.Item):
 
 
 class StoreItem(scrapy.Item):
-    url = scrapy.Field()
+    inc_field = scrapy.Field()
     source_crawler = scrapy.Field()
+    url = scrapy.Field()
     name = scrapy.Field()
     description = scrapy.Field()
-    last_chapter_index = scrapy.Field()
     last_modify_dttm = scrapy.Field()
     processed_dttm = scrapy.Field()
 
 
 class AuthorTodayItem(StoreItem):
-    pass
+    last_chapter_index = scrapy.Field()
+
 
 class WebnoveItem(StoreItem):
-    pass
+    last_relative_modify_dttm = scrapy.Field()
+    last_chapter_index = scrapy.Field()
+
+
+class LitmarketItem(StoreItem):
+    last_relative_modify_dttm = scrapy.Field()
+    last_pages_number = scrapy.Field()

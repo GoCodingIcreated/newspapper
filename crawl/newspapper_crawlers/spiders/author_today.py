@@ -40,7 +40,7 @@ class AuthorTodaySpider(scrapy.Spider):
         # print(resp.css("span.hint-top-right").xpath("@data-time").get())
         # print(resp.css("a::text").get())
         # print("---")
-
+        chapters_count = len(response.css("ul.list-unstyled.table-of-content li"))
         self.logger.debug("Response: %s" % s)
         meta_info = json.loads(s)
         yield AuthorTodayItem(url=response.url,
@@ -48,7 +48,9 @@ class AuthorTodaySpider(scrapy.Spider):
                               name=meta_info[self.AUTHOR_TODAY_NAME_FIELD],
                               description=meta_info["description"],
                               last_modify_dttm=convert_gmt_zero_to_msk(meta_info[self.AUTHOR_TODAY_LAST_UPDATE_DTTM_FIELD]),
-                              processed_dttm=current_timestamp())
+                              processed_dttm=current_timestamp(),
+                              last_chapter_index=chapters_count
+                              )
 
 
 

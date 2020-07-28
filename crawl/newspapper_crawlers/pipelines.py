@@ -9,7 +9,7 @@ from itemadapter import ItemAdapter
 import sqlite3
 import logging
 import json
-
+import pymongo
 
 
 class SqliteStorePipeline(object):
@@ -87,9 +87,9 @@ class JsonDumpPipeline(object):
         mode = "w"
 
         # TODO: REPLACE THIS SHIT WITH GETTING SETTING FROM SETTINGS FILE
-        if spider.name == "webnovel":
+        if spider.name == "webnovel" or spider.name == "litmarket":
             mode = "a"
-            
+
         self.output[spider.name] = open(filename, mode, encoding='utf8')
 
     def close_spider(self, spider):
@@ -101,4 +101,28 @@ class JsonDumpPipeline(object):
         self.logger.debug("Dumping item " + str(adapter.asdict()))
         json.dump(adapter.asdict(), self.output[spider.name], ensure_ascii=False, indent=4)
         self.output[spider.name].write(",\n")
+
+class MongoPipeline(object):
+    logger = logging.getLogger("MongoPipeline")
+    table = "items"
+    db_name = "crawler_storage"
+
+    def process_item(self, item, spider):
+        adapter = ItemAdapter(item)
+        self.logger.debug("Dumping item " + str(adapter.asdict()))
+        d = dict(adapter.asdict())
+        d["_id"] = d["url"]
+        self.items.replace_one({"_id": d["_id"]}, d, upsert=True)
+        return item
+
+    def open_spider(self, spider):
+        self.logger.info("Opening spider " + spider.name)
+        self.client = pymongo.MongoClient("mongodb://localhost:27017/")
+        self.db = self.client[self.db_name]
+        self.items = self.db[self.table]
+
+
+    def close_spider(self, spider):
+        self.logger.info("Closing spider " + spider.name)
+        self.client.close()
 

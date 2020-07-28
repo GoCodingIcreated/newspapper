@@ -25,12 +25,14 @@ class WebnovelSpider(scrapy.Spider):
         self.logger.debug("Response: %s" % data)
         data = data.replace("\\ ", " ")
         meta = json.loads(data)
+        last_relative_modify_dttm = meta["bookInfo"]["newChapterTime"]
         yield WebnoveItem(url=response.url,
                           source_crawler=self.name,
                           name=meta["bookInfo"]["bookName"],
                           description=meta["bookInfo"]["description"],
                           last_chapter_index=meta["bookInfo"]["newChapterIndex"],
-                          last_modify_dttm=meta["bookInfo"]["newChapterTime"],
+                          last_modify_dttm=last_relative_modify_dttm,
+                          last_relative_modify_dttm=last_relative_modify_dttm,
                           processed_dttm=current_timestamp()
                           )
 
