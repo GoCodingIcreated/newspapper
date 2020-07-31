@@ -14,7 +14,7 @@ if [ -z "$MESSAGE" ]; then
     echo "ERROR: Empty message."
     exit 1
 fi
-MESSAGE=$(echo "$MESSAGE" | sed 's/"/\\"/g' | sed 's/\./\\\\\./g' | sed 's/\-/\\\\\-/g' | sed 's/!/\\\\!/g')
+MESSAGE=$(echo "$MESSAGE" | sed 's/"/\\"/g' | sed 's/\./\\\\\./g' | sed 's/\-/\\\\\-/g' | sed 's/!/\\\\!/g' | sed 's/(/\\\\(/g' | sed 's/)/\\\\)/g' | sed 's/\\(\(http.*\)\\)/(\1)/g')
 
 echo "DEBUG: SEND_ALARM: MESSAGE: $MESSAGE"
 res=$(curl -s -X POST \

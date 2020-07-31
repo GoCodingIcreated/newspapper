@@ -33,7 +33,8 @@ class WebnovelSpider(scrapy.Spider):
                           last_chapter_index=meta["bookInfo"]["newChapterIndex"],
                           last_modify_dttm=last_relative_modify_dttm,
                           last_relative_modify_dttm=last_relative_modify_dttm,
-                          processed_dttm=current_timestamp()
+                          processed_dttm=current_timestamp(),
+                          inc_field=meta["bookInfo"]["newChapterIndex"]
                           )
 
 

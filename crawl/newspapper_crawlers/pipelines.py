@@ -11,6 +11,13 @@ import logging
 import json
 import pymongo
 
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
+from common.vars import MONGO_URL
+from common.vars import PIPELINE_MONGO_ITEM_TABLE
+from common.vars import PIPELINE_MONGO_ITEM_DB
+from common.vars import PIPELINE_JSON_DUMP_LOG_DIR
 
 class SqliteStorePipeline(object):
     logger = logging.getLogger("SqliteStorePipeline")
@@ -74,7 +81,6 @@ class SqliteStorePipeline(object):
 class JsonDumpPipeline(object):
     logger = logging.getLogger("JsonDumpPipeline")
     output = {}
-    LOG_PATH = "../logs/"
 
     def process_item(self, item, spider):
         self.logger.debug("Processing item for spider " + spider.name)
@@ -83,7 +89,7 @@ class JsonDumpPipeline(object):
 
     def open_spider(self, spider):
         self.logger.info("Opening spider " + spider.name)
-        filename = self.LOG_PATH + spider.name + ".json"
+        filename = PIPELINE_JSON_DUMP_LOG_DIR + spider.name + ".json"
         mode = "w"
 
         # TODO: REPLACE THIS SHIT WITH GETTING SETTING FROM SETTINGS FILE
@@ -102,10 +108,9 @@ class JsonDumpPipeline(object):
         json.dump(adapter.asdict(), self.output[spider.name], ensure_ascii=False, indent=4)
         self.output[spider.name].write(",\n")
 
+
 class MongoPipeline(object):
     logger = logging.getLogger("MongoPipeline")
-    table = "items"
-    db_name = "crawler_storage"
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
@@ -117,9 +122,9 @@ class MongoPipeline(object):
 
     def open_spider(self, spider):
         self.logger.info("Opening spider " + spider.name)
-        self.client = pymongo.MongoClient("mongodb://localhost:27017/")
-        self.db = self.client[self.db_name]
-        self.items = self.db[self.table]
+        self.client = pymongo.MongoClient(MONGO_URL)
+        self.db = self.client[PIPELINE_MONGO_ITEM_DB]
+        self.items = self.db[PIPELINE_MONGO_ITEM_TABLE]
 
 
     def close_spider(self, spider):

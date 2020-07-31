@@ -12,11 +12,10 @@ from common.timestamp import current_timestamp
 
 class LitmarketSpider(scrapy.Spider):
     name = 'litmarket'
-    allowed_domains = ['litmarket.ru']
+
 
     def start_requests(self):
         start_urls = [
-            'https://litmarket.ru/books/uderzhivayushchiy-apokalipsis', # fake
             'https://litmarket.ru/books/igrat-chtoby-zhit-9',
         ]
         for url in start_urls:
@@ -42,7 +41,8 @@ class LitmarketSpider(scrapy.Spider):
                             last_modify_dttm=last_modify_dttm,
                             last_relative_modify_dttm=last_relative_modify_dttm,
                             last_pages_number=last_pages_number,
-                            processed_dttm=processed_dttm
+                            processed_dttm=processed_dttm,
+                            inc_field=last_pages_number
                             )
 
     def convert_litmarket_last_update_dttm_to_absolute(self, current_ts, dttm):

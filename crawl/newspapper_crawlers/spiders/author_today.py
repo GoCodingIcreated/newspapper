@@ -1,4 +1,5 @@
 import scrapy
+import pymongo
 import json
 import datetime
 
@@ -21,11 +22,14 @@ class AuthorTodaySpider(scrapy.Spider):
 
     connect = None
     def start_requests(self):
+        # TODO: add read urls from file (get filename from project settings)
+        # TODO: add read urls from db. Or maybe add connection to db in somewhere else place
         urls = [
             'https://author.today/work/58624', # Moved by wind
             'https://author.today/work/68112', # The last from Blau
             'https://author.today/work/60081', # The Deal of Dark Mage
             'https://author.today/work/59512', # Class neutral
+            'https://author.today/work/81556', # Kaya
         ]
 
         for url in urls:
@@ -49,7 +53,8 @@ class AuthorTodaySpider(scrapy.Spider):
                               description=meta_info["description"],
                               last_modify_dttm=convert_gmt_zero_to_msk(meta_info[self.AUTHOR_TODAY_LAST_UPDATE_DTTM_FIELD]),
                               processed_dttm=current_timestamp(),
-                              last_chapter_index=chapters_count
+                              last_chapter_index=chapters_count,
+                              inc_field=convert_gmt_zero_to_msk(meta_info[self.AUTHOR_TODAY_LAST_UPDATE_DTTM_FIELD])
                               )
 
 
