@@ -66,7 +66,7 @@ ROBOTSTXT_OBEY = True
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'newspapper_crawlers.pipelines.JsonDumpPipeline': 100,
-    'newspapper_crawlers.pipelines.SqliteStorePipeline': 200,
+    'newspapper_crawlers.pipelines.MongoPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

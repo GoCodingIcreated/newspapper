@@ -10,6 +10,7 @@ import os.path
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../'))
 from common.timestamp import current_timestamp
 from common.timestamp import convert_gmt_zero_to_msk
+import common.vars as variables
 
 class AuthorTodaySpider(scrapy.Spider):
     name = "author_today"
@@ -22,15 +23,12 @@ class AuthorTodaySpider(scrapy.Spider):
 
     connect = None
     def start_requests(self):
-        # TODO: add read urls from file (get filename from project settings)
-        # TODO: add read urls from db. Or maybe add connection to db in somewhere else place
-        urls = [
-            'https://author.today/work/58624', # Moved by wind
-            'https://author.today/work/68112', # The last from Blau
-            'https://author.today/work/60081', # The Deal of Dark Mage
-            'https://author.today/work/59512', # Class neutral
-            'https://author.today/work/81556', # Kaya
-        ]
+
+        client = pymongo.MongoClient(variables.MONGO_URL)
+        books_db = client[variables.STORE_MONGO_BOOKS_DB]
+        books_table = books_db[variables.STORE_MONGO_BOOKS_TABLE]
+        urls = [item["book_url"] for item in books_table.find({"platform": self.name})]
+        self.logger.debug("URLS: " + str(urls))
 
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)

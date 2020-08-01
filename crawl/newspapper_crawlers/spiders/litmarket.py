@@ -5,20 +5,25 @@ import sys
 import os
 import re
 from ..items import LitmarketItem
-
+import pymongo
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../'))
 from common.timestamp import current_timestamp
+import common.vars as variables
 
 class LitmarketSpider(scrapy.Spider):
     name = 'litmarket'
 
 
     def start_requests(self):
-        start_urls = [
-            'https://litmarket.ru/books/igrat-chtoby-zhit-9',
-        ]
-        for url in start_urls:
+
+        client = pymongo.MongoClient(variables.MONGO_URL)
+        books_db = client[variables.STORE_MONGO_BOOKS_DB]
+        books_table = books_db[variables.STORE_MONGO_BOOKS_TABLE]
+        urls = [item["book_url"] for item in books_table.find({"platform": self.name})]
+        self.logger.debug("URLS: " + str(urls))
+
+        for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):

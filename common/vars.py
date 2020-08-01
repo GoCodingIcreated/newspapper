@@ -2,7 +2,7 @@ MONGO_URL = "mongodb://localhost:27017"
 
 PIPELINE_MONGO_ITEM_TABLE = "items"
 PIPELINE_MONGO_ITEM_DB = "crawler_storage"
-PIPELINE_JSON_DUMP_LOG_DIR = "../"
+PIPELINE_JSON_DUMP_LOG_DIR = "../logs/crawl/dumps"
 
 STORE_MONGO_REPRESENATIONS_TABLE = "representations"
 STORE_MONGO_REPRESENATIONS_DB = "store"

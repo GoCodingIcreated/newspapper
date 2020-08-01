@@ -37,8 +37,8 @@ alert_table = alert_db[variables.ALARM_MONGO_ALERT_TABLE]
 pipeline_db = connect[variables.PIPELINE_MONGO_ITEM_DB]
 pipeline_table = pipeline_db[variables.PIPELINE_MONGO_ITEM_TABLE]
 
-represent_db = connect[variables.STORE_MONGO_REPRESENATION_DB]
-represent_table = represent_db[variables.STORE_MONGO_REPRESENATION_TABLE]
+represent_db = connect[variables.STORE_MONGO_REPRESENATIONS_DB]
+represent_table = represent_db[variables.STORE_MONGO_REPRESENATIONS_TABLE]
 
 representations = represent_table.find()
 
@@ -57,7 +57,7 @@ for repres in representations:
                     send_alarm(parse(item, repres["format"]))
                     update(item)
                     retry = variables.ALARM_TELEGRAM_RETRIES
-                    time.sleep(variables.ALARM_TELERGRAM_PAUSE_ALERT_TIME_SEC)
+                    time.sleep(variables.ALARM_TELEGRAM_PAUSE_ALERT_TIME_SEC)
                 except CalledProcessError as ex:
                     print("ERROR: Error during sending message " + str(ex), flush=True)
                     print("INFO: Retry number: " + str(retry))

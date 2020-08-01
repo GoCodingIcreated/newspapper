@@ -19,6 +19,7 @@ from common.vars import PIPELINE_MONGO_ITEM_TABLE
 from common.vars import PIPELINE_MONGO_ITEM_DB
 from common.vars import PIPELINE_JSON_DUMP_LOG_DIR
 
+
 class SqliteStorePipeline(object):
     logger = logging.getLogger("SqliteStorePipeline")
     TABLE_NAME = "info"
@@ -41,7 +42,6 @@ class SqliteStorePipeline(object):
                    ") " \
                    "VALUES(%%s, %%s, %%s, %%s, %%s, %%s" \
                    ");" % TABLE_NAME
-
 
     connect = {}
 
@@ -89,12 +89,12 @@ class JsonDumpPipeline(object):
 
     def open_spider(self, spider):
         self.logger.info("Opening spider " + spider.name)
-        filename = PIPELINE_JSON_DUMP_LOG_DIR + spider.name + ".json"
+        filename = os.path.join(PIPELINE_JSON_DUMP_LOG_DIR, spider.name + ".json")
         mode = "w"
 
-        # TODO: REPLACE THIS SHIT WITH GETTING SETTING FROM SETTINGS FILE
-        if spider.name == "webnovel" or spider.name == "litmarket":
-            mode = "a"
+        # DEBUG
+        #if spider.name == "webnovel" or spider.name == "litmarket":
+        #    mode = "a"
 
         self.output[spider.name] = open(filename, mode, encoding='utf8')
 
