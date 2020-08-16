@@ -23,8 +23,8 @@ def add_track_book_telegram(chat_id, book_url, platform):
     users_db = client[variables.STORE_MONGO_USERS_DB]
     users_table = users_db[variables.STORE_MONGO_USERS_TABLE]
 
-    representation_db = client[variables.STORE_MONGO_REPRESENATIONS_DB]
-    representation_table = representation_db[variables.STORE_MONGO_REPRESENATIONS_TABLE]
+    representation_db = client[variables.STORE_MONGO_REPRESENTATIONS_DB]
+    representation_table = representation_db[variables.STORE_MONGO_REPRESENTATIONS_TABLE]
 
     if representation_table.find_one({"_id": platform}) is None:
         raise StoreApiException("ERROR: platform must be one of known")
@@ -77,8 +77,8 @@ def inc_book(book_url, platform):
 
 def insert_representation(id, format):
     client = pymongo.MongoClient(variables.MONGO_URL)
-    db = client[variables.STORE_MONGO_REPRESENATIONS_DB]
-    representation = db[variables.STORE_MONGO_REPRESENATIONS_TABLE]
+    db = client[variables.STORE_MONGO_REPRESENTATIONS_DB]
+    representation = db[variables.STORE_MONGO_REPRESENTATIONS_TABLE]
 
     representation.replace_one(
         {

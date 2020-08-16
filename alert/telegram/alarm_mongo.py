@@ -37,8 +37,8 @@ alert_table = alert_db[variables.ALARM_MONGO_ALERT_TABLE]
 pipeline_db = connect[variables.PIPELINE_MONGO_ITEM_DB]
 pipeline_table = pipeline_db[variables.PIPELINE_MONGO_ITEM_TABLE]
 
-represent_db = connect[variables.STORE_MONGO_REPRESENATIONS_DB]
-represent_table = represent_db[variables.STORE_MONGO_REPRESENATIONS_TABLE]
+represent_db = connect[variables.STORE_MONGO_REPRESENTATIONS_DB]
+represent_table = represent_db[variables.STORE_MONGO_REPRESENTATIONS_TABLE]
 
 representations = represent_table.find()
 

@@ -3,5 +3,5 @@ __pycache__
 logs/*
 \.idea
 token.txt
-store/*
+store/*.db
 *.html
