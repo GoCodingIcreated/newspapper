@@ -3,9 +3,11 @@ import telebot
 
 import sys
 import os
+from bson.objectid import ObjectId
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 import common.vars as variables
+import store.store_api as store_api
 
 
 class Server:
@@ -13,8 +15,9 @@ class Server:
     START_TRACKS = "Start tracking"
     STOP_TRACKS = "Stop tracking"
     NOT_ALLOWED = "Not allowed"
+
     def __init__(self):
-        self.db = DbAPI()
+        self.db = store_api.StoreApi()
         with open(variables.TOKEN_PATH, "r") as f:
             token = f.readline()
             print("token: " + token)
@@ -26,6 +29,13 @@ class Server:
         keyboard_main.row(Server.START_TRACKS)
         keyboard_main.row(Server.STOP_TRACKS)
 
+        keyboard_msg = telebot.types.InlineKeyboardMarkup()
+        get_button = telebot.types.InlineKeyboardButton(Server.GET_TRACKS, callback_data="get_button")
+        add_button = telebot.types.InlineKeyboardButton(Server.START_TRACKS, callback_data="add_button")
+        remove_button = telebot.types.InlineKeyboardButton(Server.STOP_TRACKS, callback_data="remove_button")
+        keyboard_msg.row(get_button)
+        keyboard_msg.row(add_button)
+        keyboard_msg.row(remove_button)
 
         @self.bot.message_handler(commands=['start'])
         def start_message(message):
@@ -33,7 +43,7 @@ class Server:
             if not self.has_rights(message.chat.id):
                 self.bot.send_message(message.chat.id, Server.NOT_ALLOWED)
                 return
-            self.bot.send_message(message.chat.id, self.hello_msg, reply_markup=keyboard_main)
+            self.bot.send_message(message.chat.id, self.hello_msg, reply_markup=keyboard_msg)
 
         @self.bot.message_handler(content_types=['text'])
         def send_text(message):
@@ -42,15 +52,55 @@ class Server:
                 self.bot.send_message(message.chat.id, Server.NOT_ALLOWED)
                 return
 
-            if message.text == Server.GET_TRACKS:
-                subscriptions = self.get_subscription_list(message.chat.id)
-                self.bot.send_message(message.chat.id, "Subscriptions: \n" + "\n".join(subscriptions))
-            elif message.text == Server.START_TRACKS:
-                is_success = self.add_subscription(message.chat.id)
-                self.bot.send_message(message.chat.id, 'Прощай, создатель')
-            elif message.text == Server.STOP_TRACKS:
-                is_success = self.remove_subscription(message.chat.id)
-                self.bot.send_sticker(message.chat.id, 'CAADAgADZgkAAnlc4gmfCor5YbYYRAI')
+        @self.bot.callback_query_handler(func=lambda call: call.data == "get_button")
+        def callback_get_button(call):
+            print(str(call))
+            subscriptions = self.get_subscription_list(call.from_user.id)
+            book_urls = [sub["book_url"] for sub in subscriptions]
+            self.bot.answer_callback_query(call.id, "")
+            self.bot.send_message(call.from_user.id, "Subscriptions: \n" + "\n".join(book_urls), reply_markup=keyboard_msg)
+
+        @self.bot.callback_query_handler(func=lambda call: call.data == "add_button")
+        def callback_add_button(call):
+            print(str(call))
+            keyboard = self.get_add_keyboard()
+            self.bot.answer_callback_query(call.id, "")
+            self.bot.send_message(call.from_user.id, "Select platform", reply_markup=keyboard)
+
+        @self.bot.callback_query_handler(func=lambda call: call.data == "remove_button")
+        def callback_remove_button(call):
+            print(str(call))
+            # is_success = self.remove_subscription(call.from_user.id)
+            subscriptions = self.get_subscription_list(call.from_user.id)
+            keyboard = self.get_remove_keyboard(subscriptions)
+            self.bot.answer_callback_query(call.id, "")
+            self.bot.send_message(call.from_user.id, "Select book to stop tracking", reply_markup=keyboard)
+
+        @self.bot.callback_query_handler(func=lambda call: call.data.startswith("stop_track_button"))
+        def callback_stop_track_button(call):
+            print(str(call))
+            data = call.data.split()
+            if len(data) != 2:
+                # TODO: handle bad query
+                pass
+            else:
+                book_id = data[1]
+                book = self.db.remove_track_book_telegram(call.from_user.id, {"_id": ObjectId(book_id)})
+                self.bot.answer_callback_query(call.id, "")
+                self.bot.send_message(call.from_user.id, "Stopped track book: " + book["book_url"], reply_markup=keyboard_msg)
+
+        @self.bot.callback_query_handler(func=lambda call: call.data.startswith("platform_button"))
+        def callback_platform_button(call):
+            print(call)
+            data = call.data.split()
+            if len(data) != 2:
+                # TODO: handle wrong query
+                pass
+            else:
+                keyboard = None
+                # self.db.add_track_book_telegram(call.from_user.id, , )
+                self.bot.answer_callback_query(call.id, "")
+                self.bot.send_message("", reply_markup=keyboard)
 
 
         self.start_polling()
@@ -73,36 +123,24 @@ class Server:
     def has_rights(self, user_id):
         return self.db.has_user(str(user_id))
 
+    def get_remove_keyboard(self, subscriptions):
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        for sub in subscriptions:
+            button = telebot.types.InlineKeyboardButton(sub["book_url"],
+                                                        callback_data="stop_track_button " + str(sub["_id"]))
+            keyboard.row(button)
 
-class DbAPI():
-    def __init__(self):
-        self.db = pymongo.MongoClient(variables.MONGO_URL)
+        return keyboard
 
-        self.users_db = self.db[variables.STORE_MONGO_USERS_DB]
-        self.users_table = self.users_db[variables.STORE_MONGO_USERS_TABLE]
+    def get_add_keyboard(self):
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        platforms = self.db.get_platforms()
+        for platform in platforms:
+            button = telebot.types.InlineKeyboardButton(platform,
+                                                        callback_data="platform_button " + str(platform))
+            keyboard.row(button)
 
-        self.telegram_init_db = self.db[variables.ALERT_TELEGRAM_INIT_DB]
-        self.telegram_init_table = self.telegram_init_db[variables.ALERT_TELEGRAM_INIT_TABLE]
-
-        self.tracks_db = self.db[variables.STORE_MONGO_BOOKS_TRACK_DB]
-        self.tracks_table = self.tracks_db[variables.STORE_MONGO_BOOKS_TRACK_TABLE]
-
-        self.books_db = self.db[variables.STORE_MONGO_BOOKS_DB]
-        self.books_table = self.books_db[variables.STORE_MONGO_BOOKS_TABLE]
-
-    def has_user(self, user_id):
-        print(self.users_table.find_one({"chat_id": user_id}))
-        return self.users_table.find_one({"chat_id": user_id}) is not None
-
-    def get_subscriptions(self, user_id):
-        books = []
-        for track in self.tracks_table.find({"chat_id": user_id}):
-            book = self.books_table.find_one({"book_url": track["book_url"]})
-            # TODO: change to name
-            # books.append(book["name"])
-            books.append(book["book_url"])
-        print("Books: " + str(books))
-        return books
+        return keyboard
 
 if __name__ == "__main__":
     server = Server()
