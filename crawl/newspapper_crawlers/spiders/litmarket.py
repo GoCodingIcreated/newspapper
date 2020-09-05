@@ -12,7 +12,7 @@ from common.timestamp import current_timestamp
 import common.vars as variables
 
 class LitmarketSpider(scrapy.Spider):
-    name = 'litmarket'
+    name = 'litmarket.ru'
 
 
     def start_requests(self):

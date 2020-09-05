@@ -12,7 +12,7 @@ from common.timestamp import current_timestamp
 import common.vars as variables
 
 class WebnovelSpider(scrapy.Spider):
-    name = 'webnovel'
+    name = 'webnovel.com'
 
     def start_requests(self):
         client = pymongo.MongoClient(variables.MONGO_URL)

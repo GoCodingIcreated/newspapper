@@ -4,10 +4,16 @@ import subprocess
 import time
 import sys
 import os.path
-
+import json
+import logging
+import logging.config
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 from common.timestamp import current_timestamp
 import common.vars as variables
+
+with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:
+    conf_dict = json.load(f)
+logging.config.dictConfig(conf_dict)
 
 from subprocess import CalledProcessError
 
@@ -21,7 +27,7 @@ def send_alarm(msg):
 
 def parse(item, format):
     for key in item.keys():
-        format = format.replace("$" + key, str(item[key]))
+        format = format.replace("$" + key, str(item[key]).replace("_", "\\\\_"))
     print("DEBUG parse result: " + format, flush=True)
     return format
 

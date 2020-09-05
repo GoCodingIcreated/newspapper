@@ -1,0 +1,135 @@
+{
+    "version": 1,
+    "formatters": {
+            "simple": {
+                "format": "[%(asctime)s] [%(module)s:%(funcName)s:%(lineno)s] %(levelname)s: %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S"
+            }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "stream": "ext://sys.stdout"
+        },
+        "error": {
+            "level": "ERROR",
+            "formatter": "simple",
+            "class": "logging.FileHandler",
+            "filename": "/home/nickolas/Development/Newspapper/logs/error.log",
+            "mode": "a"
+        },
+        "debug": {
+            "level": "DEBUG",
+            "formatter": "simple",
+            "class": "logging.FileHandler",
+            "filename": "/home/nickolas/Development/Newspapper/logs/debug.log",
+            "mode": "a"
+        },
+        "info": {
+            "level": "INFO",
+            "formatter": "simple",
+            "class": "logging.FileHandler",
+            "filename": "/home/nickolas/Development/Newspapper/logs/info.log",
+            "mode": "a"
+        },
+        "Server": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "filename": "/home/nickolas/Development/Newspapper/logs/alert/Server.log",
+            "mode": "a",
+            "maxBytes": 1048576,
+            "backupCount": 10
+        },
+        "Alarm": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "filename": "/home/nickolas/Development/Newspapper/logs/alert/Alarm.log",
+            "mode": "a",
+            "maxBytes": 1048576,
+            "backupCount": 10
+        },
+        "StoreApi": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "filename": "/home/nickolas/Development/Newspapper/logs/store/StoreApi.log",
+            "mode": "a",
+            "maxBytes": 1048576,
+            "backupCount": 10
+        },
+        "BookRequester": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "filename": "/home/nickolas/Development/Newspapper/logs/alert/BookRequester.log",
+            "mode": "a",
+            "maxBytes": 1048576,
+            "backupCount": 10
+        },
+        "Validator": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "filename": "/home/nickolas/Development/Newspapper/logs/alert/Validator.log",
+            "mode": "a",
+            "maxBytes": 1048576,
+            "backupCount": 10
+        }
+    },
+    "loggers": {
+        "Server": {
+            "level": "DEBUG",
+            "handlers": [
+                "Server",
+                "error"
+            ],
+            "propagate": "no"
+        },
+        "Alarm": {
+            "level": "DEBUG",
+            "handlers": [
+                "Alarm",
+                "error"
+            ],
+            "propagate": "no"
+        },
+        "StoreApi": {
+            "level": "DEBUG",
+            "handlers": [
+                "StoreApi",
+                "error"
+            ],
+            "propagate": "no"
+        },
+        "BookRequester": {
+            "level": "DEBUG",
+            "handlers": [
+                "BookRequester",
+                "error"
+            ],
+            "propagate": "no"
+        },
+        "Validator": {
+            "level": "DEBUG",
+            "handlers": [
+                "Validator",
+                "error"
+            ],
+            "propagate": "no"
+        },
+
+        "": {
+            "level": "DEBUG",
+            "handlers": [
+                "console",
+                "error",
+                "debug",
+                "info"
+            ]
+        }
+    }
+}

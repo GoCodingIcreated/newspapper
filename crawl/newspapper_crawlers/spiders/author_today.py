@@ -13,7 +13,7 @@ from common.timestamp import convert_gmt_zero_to_msk
 import common.vars as variables
 
 class AuthorTodaySpider(scrapy.Spider):
-    name = "author_today"
+    name = "author.today"
 
 
     AUTHOR_TODAY_META_CSS_PATH = "div.panel-body script::text"
