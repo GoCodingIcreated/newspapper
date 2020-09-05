@@ -72,21 +72,21 @@ class StoreApi:
             raise ex
 
         if self.representation_table.find_one({"_id": platform}) is None:
-            ex = StoreApiException(f"Unknown platform: {platform}")
-            self.logger.error(f"Unknown platform: {platform}")
+            ex = StoreApiException(f"An unknown platform: {platform}")
+            self.logger.error(f"An unknown platform: {platform}")
             self.logger.exception(ex)
             raise ex
 
         if self.users_table.find_one({"chat_id": chat_id}) is not None:
             if self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is None:
                 self.add_book(book)
-                self.logger.info(f"Start tracking book {book} for user {chat_id}")
+                self.logger.info(f"Start tracking a book {book} for the user {chat_id}")
                 self.track_table.insert_one({"chat_id": chat_id, "book_url": book_url})
             else:
-                self.logger.info(f"The book {book_url} is already tracking for user {chat_id}")
+                self.logger.info(f"The book {book_url} is already tracking for the user {chat_id}")
         else:
-            ex = StoreApiException(f"There is no user with chat_id: {chat_id}")
-            self.logger.error(f"There is no user with chat_id: {chat_id}")
+            ex = StoreApiException(f"There is no such user with chat_id: {chat_id}")
+            self.logger.error(f"There is no such user with chat_id: {chat_id}")
             self.logger.exception(ex)
             raise ex
 
@@ -105,14 +105,14 @@ class StoreApi:
 
         self.logger.debug(f"chat_id: {chat_id}, book_info: {book_info}, book: {book}")
         if book is None:
-            ex = StoreApiException(f"There is no book with info: {book_info}")
-            self.logger.debug(f"There is no book with info: {book_info}")
+            ex = StoreApiException(f"There is no such book with info: {book_info}")
+            self.logger.debug(f"There is no such book with info: {book_info}")
             self.logger.exception(ex)
             raise ex
         book_url = book.get("book_url")
         if book_url is None:
-            ex = StoreApiException(f"There is book {book} in book_table without book_url")
-            self.logger.critical(f"There is book {book} in book_table without book_url")
+            ex = StoreApiException(f"There is a book {book} in book_table without book_url")
+            self.logger.critical(f"There is a book {book} in book_table without book_url")
             self.logger.exception(ex)
             raise ex
 
@@ -120,10 +120,10 @@ class StoreApi:
             if self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is not None:
                 self.track_table.delete_one({"chat_id": chat_id, "book_url": book_url})
             else:
-                self.logger.info(f"Book {book_info} is already not tracking for user {chat_id}")
+                self.logger.info(f"The book {book_info} is already not tracking for the user {chat_id}")
         else:
-            ex = StoreApiException(f"There is no user with chat_id: {chat_id}")
-            self.logger.debug(f"There is no user with chat_id: {chat_id}")
+            ex = StoreApiException(f"There is no such user with chat_id: {chat_id}")
+            self.logger.debug(f"There is no such user with chat_id: {chat_id}")
             self.logger.exception(ex)
             raise ex
 
@@ -133,7 +133,11 @@ class StoreApi:
     def add_telegram_user(self, chat_id):
         self.logger.debug(f"chat_id: {chat_id}")
         chat_id = str(chat_id)
-        self.users_table.replace_one({"chat_id": chat_id}, {"chat_id": chat_id}, upsert=True)
+        if self.users_table.find_one({"chat_id": chat_id}) is None:
+            self.logger.info(f"Adding a new user {chat_id}.")
+            self.users_table.insert_one({"chat_id": chat_id})
+        else:
+            self.logger.info(f"The user {chat_id} is already in the DB.")
 
     """
         book:
@@ -147,23 +151,23 @@ class StoreApi:
         book_url = book.get("book_url")
         platform = book.get("platform")
         if book_url is None:
-            ex = StoreApiException(f"book_url must be provided. Requested book: {book}")
-            self.logger.error(f"There is request {book} without book_url")
+            ex = StoreApiException(f"book_url must be provided. The requested book: {book}")
+            self.logger.error(f"There is request {book} without a book_url")
             self.logger.exception(ex)
             raise ex
         if platform is None:
-            ex = StoreApiException(f"platform must be provided. Requested book: {book}")
-            self.logger.error(f"There is request {book} without platform")
+            ex = StoreApiException(f"platform must be provided. The requested book: {book}")
+            self.logger.error(f"There is request {book} without a platform")
             self.logger.exception(ex)
             raise ex
         old_book = self.book_table.find_one({"book_url": book_url})
         self.logger.debug(f"Book: {book}, old_book: {old_book}")
         if old_book is not None:
             self.book_table.replace_one({"book_url": book_url}, book, upsert=True)
-            self.logger.info(f"Book {book} is already added. Previous value: {old_book}. New value: {book}")
+            self.logger.info(f"The book {book} is already added. Previous value: {old_book}. New value: {book}")
         else:
             book = self.book_table.insert_one(book)
-            self.logger.info(f"Book {book} has been added.")
+            self.logger.info(f"The book {book} has been added.")
 
     """
         book:
@@ -267,8 +271,8 @@ class StoreApi:
             self.logger.exception(ex)
             raise ex
         if record_platform.get("validation_regexp") is None:
-            ex = StoreApiException(f"There is no validation_regexp for platform {platform}, record_platform: {record_platform}")
-            self.logger.error(f"There is no validation_regexp for platform {platform}, record_platform: {record_platform}")
+            ex = StoreApiException(f"There is no validation_regexp for a platform {platform}, record_platform: {record_platform}")
+            self.logger.error(f"There is no validation_regexp for a platform {platform}, record_platform: {record_platform}")
             self.logger.exception(ex)
             raise ex
         validation_regexp = record_platform["validation_regexp"]
@@ -285,8 +289,8 @@ class StoreApi:
 
         platform = validation["platform"]
         if platform is None:
-            ex = StoreApiException(f"Validation {validation} must content 'platform' field")
-            self.logger.error(f"Validation {validation} must content 'platform' field")
+            ex = StoreApiException(f"Validation {validation} must content a 'platform' field")
+            self.logger.error(f"Validation {validation} must content a 'platform' field")
             self.logger.exception(ex)
             raise ex
 
@@ -305,8 +309,8 @@ class StoreApi:
     def get_platform_book_validation_regexps(self, platform):
         self.logger.debug(f"platform: {platform}")
         if self.representation_table.find_one({"_id": platform}) is None:
-            ex = StoreApiException(f"There is no platform {platform}")
-            self.logger.error(f"There is no platform {platform}")
+            ex = StoreApiException(f"There is no such platform {platform}")
+            self.logger.error(f"There is no such platform {platform}")
             self.logger.exception(ex)
             raise ex
         validation_regexps = list(self.platform_book_validations_table.find({"platform": platform}))
@@ -322,8 +326,8 @@ class StoreApi:
     def insert_platform_book_info_extraction(self, extractor):
         self.logger.debug(f"extractor: {extractor}")
         if extractor.get("platform") is None:
-            ex = StoreApiException(f"Field platform is absent in extraction {extractor}")
-            self.logger.error(f"Field platform is absent in extraction {extractor}")
+            ex = StoreApiException(f"A field platform is absent in extraction {extractor}")
+            self.logger.error(f"A field platform is absent in extraction {extractor}")
             self.logger.exception(ex)
             raise ex
         platform = extractor["platform"]
@@ -356,6 +360,7 @@ class StoreApi:
         chat_id = str(chat_id)
         self.logger.debug(f"chat_id: {chat_id}, book_url: {book_url}")
         return self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is not None
+
 
 if __name__ == "__main__":
     with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:

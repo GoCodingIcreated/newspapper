@@ -18,12 +18,12 @@ class ValidatorException(Exception):
 class Validator:
     def __init__(self, platform):
         self.logger = logging.getLogger("Validator")
-        self.logger.info(f"Creating Validator for platform {platform}")
+        self.logger.info(f"Creating a Validator for the platform {platform}")
         self.db = store_api.StoreApi()
         platforms = self.db.get_platforms()
 
         if platform["_id"] not in [p["_id"] for p in platforms]:
-            raise ValidatorException(f"There is no platform {platform}")
+            raise ValidatorException(f"There is no such platform {platform}")
         self.platform = platform["_id"]
 
 
@@ -36,19 +36,19 @@ class Validator:
             self.logger.info(f"Not 200 response code. Actual code is {resp.status_code}")
             return False
         validation_book_platform_regexps = self.db.get_platform_book_validation_regexps(self.platform)
-        self.logger.debug(f"validating book, platform: {self.platform},"
+        self.logger.debug(f"validating a book, platform: {self.platform},"
                           f" validation_book_platform_regexps: {validation_book_platform_regexps}")
         for regexp in validation_book_platform_regexps:
             if re.search(validation_book_platform_regexps, page_content) is None:
-                self.logger.debug(f"validation book, platform: {self.platform},"
+                self.logger.debug(f"validation a book, platform: {self.platform},"
                                   f" validation_book_platform_regexp: {regexp}, check failed")
                 return False
-        self.logger.debug(f"validation book, platform: {self.platform},"
+        self.logger.debug(f"validation a book, platform: {self.platform},"
                           f" validation_book_platform_regexps: {validation_book_platform_regexps}, check succeed")
         return True
 
     def get_book_info(self, page_content):
-        self.logger.info(f"Getting book info, platform: {self.platform}")
+        self.logger.info(f"Getting a book info, platform: {self.platform}")
         extractors = self.db.get_platform_book_info_extractors(self.platform)
         book_info = {}
         bs = bs4.BeautifulSoup

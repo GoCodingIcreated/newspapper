@@ -18,7 +18,7 @@ class BookRequesterException(Exception):
 class BookRequester:
     def __init__(self):
         self.logger = logging.getLogger("BookRequester")
-        self.logger.info("Creating BookRequester")
+        self.logger.info("Creating the BookRequester")
         self.validators = {}
         db = store_api.StoreApi()
         platforms = db.get_platforms()
@@ -26,7 +26,7 @@ class BookRequester:
             self.validators[platform["_id"]] = Validator(platform)
 
     def request_book(self, book_url, platform=None, force_request=False):
-        self.logger.info("Requesting book")
+        self.logger.info("Requesting a book")
         self.logger.debug(f"book_url: {book_url}, platform: {platform}")
         validator = self.validators.get(platform)
         db = store_api.StoreApi()
@@ -36,7 +36,7 @@ class BookRequester:
             if platform is not None:
                 self.logger.debug(f"book_url: {book_url}, platform is not None")
                 if platform not in platforms:
-                    ex = BookRequesterException(f"book_url: {book_url}, there is no platform {platform}")
+                    ex = BookRequesterException(f"book_url: {book_url}, there is no such platform {platform}")
                     self.logger.exception(ex)
                     raise ex
                 validator = Validator(platform)
@@ -70,17 +70,17 @@ class BookRequester:
         if url_group is None:
             self.logger.debug(f"book_url: {book_url}, platform: {platform}, regexp: {regexp}, url: {url_group}")
             self.logger.debug(f"book_url: {book_url}, url is None")
-            ex = BookRequesterException(f"Url {book_url} is not required validation regexp {regexp}")
+            ex = BookRequesterException(f"The URL {book_url} is not validated with validation regexp {regexp}")
             self.logger.exception(ex)
             raise ex
         url = url_group.group(0)
         self.logger.debug(f"book_url: {book_url}, platform: {platform}, regexp: {regexp}, url: {url}")
         if not force_request:
-            self.logger.info("Trying get book from DB")
+            self.logger.info("Trying to get the book from DB")
             book = db.get_book({"book_url": url})
             self.logger.debug(f"book_url: {url}, book: {book}")
             if book is not None:
-                self.logger.info(f"Returning book: {book} from DB")
+                self.logger.info(f"Returning a book: {book} from DB")
                 return book
 
         resp = requests.get(url)
@@ -88,11 +88,11 @@ class BookRequester:
         self.logger.debug(f"book_url: {book_url}, response status: {resp.status_code}, new_book_url: {new_book_url}")
 
         if not force_request:
-            self.logger.info("Trying get book from DB")
+            self.logger.info("Trying to get the book from DB")
             book = db.get_book({"book_url": new_book_url})
             self.logger.debug(f"book_url: {new_book_url}, book: {book}")
             if book is not None:
-                self.logger.info(f"Returning book: {book} from DB")
+                self.logger.info(f"Returning a book: {book} from DB")
                 return book
 
         if validator.validate_book(resp):
