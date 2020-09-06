@@ -32,6 +32,7 @@ class Server:
 
         self.bot = telebot.TeleBot(token)
         remove_keyboard = telebot.types.ReplyKeyboardRemove()
+
         @self.bot.message_handler(commands=['start'])
         def start_message(message):
             self.logger.debug("Got a message: " + str(message))
@@ -43,9 +44,13 @@ class Server:
             try:
                 self.db.add_telegram_user(message.chat.id)
                 platforms = [p["url"] for p in self.db.get_platforms()]
-                msg = f"Hello!\nI'm Bot for tracking new chapters.\nAvailable platforms: {', '.join(platforms)}.\n" \
+                msg = f"Hello!\nI'm Bot for tracking new chapters.\n\nAvailable platforms: {', '.join(platforms)}.\n\n" \
                       f"To subscribe/unsubscribe on new a book just send a message with a http link" \
-                      f" at the book from one of the available platform."
+                      f" at the book from one of the available platform.\n\n" \
+                      f"Also use following commands to interact with bot:\n" \
+                      f"\t/list - Get current subscriptions.\n" \
+                      f"\t/platforms - Get list of available platforms.\n" \
+                      f"\t/help - Get list of allowed commands.\n"
                 self.logger.info(f"Sending to the the user {message.chat.id} a message: {msg}")
                 self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
             except StoreApiException as ex:
@@ -53,7 +58,6 @@ class Server:
                 self.logger.exception(ex)
                 self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
-        # TODO: rework: /list command with pretty output
         @self.bot.message_handler(commands=['list'])
         def handler_list(message):
             self.logger.debug("Got a message: " + str(message))
@@ -72,7 +76,6 @@ class Server:
                 self.logger.exception(ex)
                 self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
-        # TODO: rework: /platform command with pretty output
         @self.bot.message_handler(commands=['platforms'])
         def handler_platforms(message):
             self.logger.debug("Got a message: " + str(message))
@@ -90,7 +93,6 @@ class Server:
                 self.logger.exception(ex)
                 self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
-        # TODO: rework: /help command with pretty output
         @self.bot.message_handler(commands=['help'])
         def handler_platform(message):
             self.logger.debug("Got a message: " + str(message))
@@ -98,10 +100,22 @@ class Server:
                 self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
                 self.bot.send_message(message.chat.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
-
-            msg = "Help"
-            self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-            self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
+            try:
+                platforms = [p["url"] for p in self.db.get_platforms()]
+                msg = f"Available platforms: {', '.join(platforms)}.\n\n" \
+                          f"To subscribe/unsubscribe on new a book just send a message with a http link" \
+                          f" at the book from one of the available platform.\n\n" \
+                          f"Also use following commands to interact with bot:\n" \
+                          f"\t/list - Get current subscriptions.\n" \
+                          f"\t/platforms - Get list of available platforms.\n" \
+                          f"\t/help - Get list of allowed commands.\n"
+                self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
+                self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard, disable_web_page_preview=True)
+            except StoreApiException as ex:
+                self.logger.critical(f"An exception occurred when executed '/help' command for the user: {message.chat.id}")
+                self.logger.exception(ex)
+                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.",
+                                      reply_markup=remove_keyboard)
 
         @self.bot.callback_query_handler(func=lambda call: call.data.startswith("add"))
         def callback_add(call):

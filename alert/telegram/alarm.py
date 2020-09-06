@@ -14,9 +14,6 @@ from store.store_api import StoreApi
 from store.store_api import StoreApiException
 
 
-class TelegramAlarmException(Exception):
-    pass
-
 class TelegramAlarm:
     def __init__(self):
         self.logger = logging.getLogger("TelegramAlarm")
@@ -33,7 +30,7 @@ class TelegramAlarm:
     def send_alarm(self, chat_id, fmt, item, book):
         self.logger.info(f"Sending alarm to the user {chat_id} with the format '{fmt}' because of the book {book}")
         msg = self.parse(item, book, fmt)
-        self.bot.send_message(chat_id, msg, disable_web_page_preview=True, parse_mode="HTML")
+        self.bot.send_message(chat_id, msg, parse_mode="HTML")
         self.update_item_alert(item)
 
     def parse(self, item, book, fmt):
