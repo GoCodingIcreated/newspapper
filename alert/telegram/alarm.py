@@ -1,74 +1,99 @@
 #!/usr/bin/python3
-import sqlite3
-import subprocess
+
+import telebot
 import time
 import sys
 import os.path
-
+import json
+import logging
+import logging.config
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 from common.timestamp import current_timestamp
-
-from subprocess import CalledProcessError
-
-# TODO: change path to normal
-DB_PATH = "/home/nickolas/Development/Newspapper/store/crawler_storage.db"
-DB_CRAWLER_NAME = "info"
-DB_ALARM_NAME = "alarm"
-PAUSE_TIME_SEC = 5
-CREATE_TABLE_QUERY = "CREATE TABLE if not exists alarm (url text PRIMARY KEY, name TEXT, description TEXT, last_modify_dttm TEXT, last_alarm_dttm text NOT NULL);"
-
-# TODO maybe add when last_modify_dttm > alarm.last_alarm_dttm and last_modify_dttm > alarm.last_modify_dttm
-SELECT_QUERY = "SELECT info.url, info.name, info.last_modify_dttm, info.description  from info left join alarm on info.url = alarm.url where alarm.url is null or info.last_modify_dttm > alarm.last_modify_dttm;"
-
-UPDATE_QUERY = "INSERT OR REPLACE INTO alarm (url, name, description, last_modify_dttm, last_alarm_dttm) values(%s, %s, %s, %s, %s);"
+import common.vars as variables
+from store.store_api import StoreApi
+from store.store_api import StoreApiException
 
 
-def send_alarm(msg):
-    print("DEBUG: MESSAGE: " + msg, flush=True)
-    # TODO: add normal path
-    subprocess.check_call("/home/nickolas/Development/Newspapper/alert/telegram/send_alarm.sh '%s'" % str(msg),
-                          shell=True)
+class TelegramAlarmException(Exception):
+    pass
+
+class TelegramAlarm:
+    def __init__(self):
+        self.logger = logging.getLogger("TelegramAlarm")
+        self.logger.info("Creating TelegramAlarm")
+        self.db = StoreApi()
+        with open(variables.TOKEN_PATH, 'r') as f:
+            token = f.readline()
+        self.bot = telebot.TeleBot(token)
+
+    def update_item_alert(self, item):
+        self.logger.info(f"Updating item's alert: {item}")
+        self.db.update_alert(item)
+
+    def send_alarm(self, chat_id, fmt, item, book):
+        self.logger.info(f"Sending alarm to the user {chat_id} with the format '{fmt}' because of the book {book}")
+        msg = self.parse(item, book, fmt)
+        self.bot.send_message(chat_id, msg, disable_web_page_preview=True, parse_mode="HTML")
+        self.update_item_alert(item)
+
+    def parse(self, item, book, fmt):
+        self.logger.info(f"Parsing item: {item}, book: {book}, fmt: '{fmt}'")
+        for key in book.keys():
+            fmt = fmt.replace("$" + key, str(book[key]))
+
+        for key in item.keys():
+            fmt = fmt.replace("$" + key, str(item[key]))
+        self.logger.info(f"The result of parsing: '{fmt}'")
+        return fmt
+
+    """ SELECT
+            tracks.chat_id,
+            representations.format,
+            books.*
+        FROM
+            books
+        INNER JOIN
+            alerts
+        ON 1=1
+            AND COALESCE(alerts.time, -INF) < book.last_modify_dttm
+            AND book.last_modify_dttm >= prev_last_modify_dttm - 1 day
+            AND COALESCE(alerts.url, book.url) = books.url
+        INNER JOIN
+            tracks
+        ON 1=1
+            AND books.url = tracks.url
+        INNER JOIN
+            representations
+        ON 1=1
+            AND representations.id = books.platform
+    """
+    def run(self):
+        self.logger.info(f"Run alarm.")
+
+        for represent in self.db.get_platforms():
+            self.logger.debug(f"represent: {represent}")
+            for item in self.db.get_items_by_platform(represent["platform"]):
+                self.logger.debug(f"item: {item}")
+                book = self.db.get_book_by_item(item)
+                self.logger.debug(f"book: {book}")
+                if book is None:
+                    self.logger.warning(f"There is Item {item} without book in DB")
+                    continue
+                alert = self.db.get_alert_by_book(book)
+                self.logger.debug(f"alert: {alert}")
+                if alert is None or alert["inc_field"] < item["inc_field"]:
+                    self.logger.info(f"The book {book} has been updated. Sending alerts.")
+                    for track in self.db.get_tracks_by_book(book):
+                        self.send_alarm(track["chat_id"], represent["format"], item, book)
+                else:
+                    self.logger.info(f"No updates on the book {book}.")
+
+        self.logger.info(f"Finish alarm.")
 
 
-def create_table():
-    cursor.execute(CREATE_TABLE_QUERY)
-    connect.commit()
-
-
-def select():
-    return cursor.execute(SELECT_QUERY).fetchall()
-
-
-def update(e):
-    query = UPDATE_QUERY % (
-        '"' + str(e[0]) + '"',
-        '"' + str(e[1]) + '"',
-        '"' + str(e[3]) + '"',
-        '"' + str(e[2]) + '"',
-        '"' + str(current_timestamp()) + '"'
-    )
-    print("DEBUG: QUERY: " + query, flush=True)
-    cursor.execute(query)
-    connect.commit()
-
-
-print("INFO: Start at " + current_timestamp(), flush=True)
-connect = sqlite3.connect(DB_PATH)
-cursor = connect.cursor()
-
-create_table()
-to_alarm = select()
-print("DEBUG: TO_ALARM: " + str(to_alarm), flush=True)
-# sys.exit(0)
-for event in to_alarm:
-    try:
-        send_alarm(
-            "New \"_%s_\" updates!\nModified at __%s__.\nSee at [%s](%s)" % (event[1], event[2], event[0], event[0]))
-        update(event)
-        time.sleep(PAUSE_TIME_SEC)
-    except CalledProcessError as ex:
-        print("ERROR: Error during sending message " + str(ex), flush=True)
-
-connect.close()
-
-print("INFO: Finish at " + current_timestamp(), flush=True)
+if __name__ == "__main__":
+    with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:
+        conf_dict = json.load(f)
+    logging.config.dictConfig(conf_dict)
+    alarm = TelegramAlarm()
+    alarm.run()

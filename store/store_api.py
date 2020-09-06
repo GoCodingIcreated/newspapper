@@ -40,6 +40,12 @@ class StoreApi:
         self.book_info_extractors_table = \
             self.book_info_extractors_db[variables.STORE_MONGO_PLATFORM_BOOK_INFO_EXTRACTORS_TABLE]
 
+        self.items_db = self.client[variables.PIPELINE_MONGO_ITEM_DB]
+        self.items_table = self.items_db[variables.PIPELINE_MONGO_ITEM_TABLE]
+
+        self.alarm_db = self.client[variables.ALARM_MONGO_ALERT_DB]
+        self.alarm_table = self.alarm_db[variables.ALARM_MONGO_ALERT_TABLE]
+
     """
         chat_id: string\int number
         book:
@@ -360,6 +366,61 @@ class StoreApi:
         chat_id = str(chat_id)
         self.logger.debug(f"chat_id: {chat_id}, book_url: {book_url}")
         return self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is not None
+
+    """
+        platform (required): name of platform, string
+    """
+    def get_items_by_platform(self, platform):
+        self.logger.debug(f"Platform: {platform}")
+        return list(self.items_table.find({"source_crawler": platform}))
+
+    """
+        item
+            url (required): url of the book
+    """
+    def get_book_by_item(self, item):
+        self.logger.debug(f"item: {item}")
+        url = item.get("url")
+        if url is None:
+            ex = StoreApiException(f"There is item without URL: {item}")
+            self.logger.error(f"There is item without URL: {item}")
+            self.logger.exception(f"There is item without URL: {item}")
+            raise ex
+        book = self.book_table.find_one({"book_url": url})
+        self.logger.debug(f"item: {item}, book: {book}")
+        return book
+
+    """
+        book:
+            url (required): book URL 
+    """
+    def get_alert_by_book(self, book):
+        self.logger.debug(f"book: {book}")
+        url = book.get("book_url")
+        if url is None:
+            ex = StoreApiException(f"There is a book {book} without book_url")
+            self.logger.error(f"There is a book {book} without book_url")
+            self.logger.exception(ex)
+            raise ex
+        alert = self.alarm_table.find_one({"url": url})
+        self.logger.debug(f"book: {book}, alert: {alert}")
+        return alert
+
+    def get_tracks_by_book(self, book):
+        self.logger.debug(f"book: {book}")
+        url = book.get("book_url")
+        if url is None:
+            ex = StoreApiException(f"There is a book {book} without book_url")
+            self.logger.error(f"There is a book {book} without book_url")
+            self.logger.exception(ex)
+            raise ex
+        tracks = list(self.track_table.find({"book_url": url}))
+        self.logger.debug(f"book: {book}, tracks: {tracks}")
+        return tracks
+
+    def update_alert(self, alert):
+        self.logger.debug(f"alert: {alert}")
+        self.alarm_table.replace_one({"_id": alert["url"]}, alert, upsert=True)
 
 
 if __name__ == "__main__":

@@ -31,13 +31,13 @@ class Server:
             token = f.readline()
 
         self.bot = telebot.TeleBot(token)
-
+        remove_keyboard = telebot.types.ReplyKeyboardRemove()
         @self.bot.message_handler(commands=['start'])
         def start_message(message):
             self.logger.debug("Got a message: " + str(message))
             if not self.has_rights(message.chat.id):
                 self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
-                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED)
+                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
             self.logger.info(f"Adding a new user {message.chat.id}")
             try:
@@ -47,11 +47,11 @@ class Server:
                       f"To subscribe/unsubscribe on new a book just send a message with a http link" \
                       f" at the book from one of the available platform."
                 self.logger.info(f"Sending to the the user {message.chat.id} a message: {msg}")
-                self.bot.send_message(message.chat.id, msg)
+                self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
             except StoreApiException as ex:
                 self.logger.critical(f"An exception occurred when started an interaction with a new user: {message.chat.id}")
                 self.logger.exception(ex)
-                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.")
+                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
         # TODO: rework: /list command with pretty output
         @self.bot.message_handler(commands=['list'])
@@ -59,18 +59,18 @@ class Server:
             self.logger.debug("Got a message: " + str(message))
             if not self.has_rights(message.chat.id):
                 self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
-                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED)
+                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
             try:
                 subscriptions = self.get_subscription_list(message.chat.id)
                 book_urls = [sub["book_url"] for sub in subscriptions]
                 msg = "Subscriptions: \n" + "\n\n".join(book_urls)
                 self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-                self.bot.send_message(message.chat.id, msg)
+                self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard, disable_web_page_preview=True)
             except StoreApiException as ex:
                 self.logger.critical(f"An exception occurred when executed '/list' command for the user: {message.chat.id}")
                 self.logger.exception(ex)
-                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.")
+                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
         # TODO: rework: /platform command with pretty output
         @self.bot.message_handler(commands=['platforms'])
@@ -78,17 +78,17 @@ class Server:
             self.logger.debug("Got a message: " + str(message))
             if not self.has_rights(message.chat.id):
                 self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
-                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED)
+                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
             try:
                 platforms = [p["url"] for p in self.db.get_platforms()]
                 msg = f"Available platforms: {', '.join(platforms)}"
                 self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-                self.bot.send_message(message.chat.id, msg)
+                self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
             except StoreApiException as ex:
                 self.logger.critical(f"An exception occurred when executed '/platforms' command for the user: {message.chat.id}")
                 self.logger.exception(ex)
-                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.")
+                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
         # TODO: rework: /help command with pretty output
         @self.bot.message_handler(commands=['help'])
@@ -96,12 +96,12 @@ class Server:
             self.logger.debug("Got a message: " + str(message))
             if not self.has_rights(message.chat.id):
                 self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
-                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED)
+                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
 
             msg = "Help"
             self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-            self.bot.send_message(message.chat.id, msg)
+            self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
 
         @self.bot.callback_query_handler(func=lambda call: call.data.startswith("add"))
         def callback_add(call):
@@ -109,7 +109,7 @@ class Server:
             if not self.has_rights(call.from_user.id):
                 self.logger.info(f"Sending to the user {call.form_user.id}, a message: {Server.NOT_ALLOWED}")
                 self.bot.answer_callback_query(call.id, "")
-                self.bot.send_message(call.form_user.id, Server.NOT_ALLOWED)
+                self.bot.send_message(call.form_user.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
             try:
                 data = call.data.split()
@@ -118,7 +118,7 @@ class Server:
                     self.logger.error(f"An unknown call with 'add', call: {call}")
                     self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                     self.bot.answer_callback_query(call.id, "")
-                    self.bot.send_message(call.from_user.id, msg)
+                    self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                 else:
                     book_id = data[1]
                     book = self.db.get_book({"_id": ObjectId(book_id)})
@@ -127,16 +127,16 @@ class Server:
                         msg = f"Start tracking the book: {book['book_url']}."
                         self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
-                        self.bot.send_message(call.from_user.id, msg)
+                        self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                     else:
                         msg = f"Book: {book['book_url']} is already tracking."
                         self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
-                        self.bot.send_message(call.from_user.id, msg)
+                        self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
             except StoreApiException as ex:
                 self.logger.critical(f"An exception occurred when executed '{call.data}' callback for the user: {call.from_user.id}")
                 self.logger.exception(ex)
-                self.bot.send_message(call.from_user.id, "Sorry, an unknown error occurred.")
+                self.bot.send_message(call.from_user.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
         @self.bot.callback_query_handler(func=lambda call: call.data.startswith("remove"))
         def callback_remove(call):
@@ -144,7 +144,7 @@ class Server:
             if not self.has_rights(call.from_user.id):
                 self.logger.info(f"Sending to the user {call.form_user.id}, a message: {Server.NOT_ALLOWED}")
                 self.bot.answer_callback_query(call.id, "")
-                self.bot.send_message(call.form_user.id, Server.NOT_ALLOWED)
+                self.bot.send_message(call.form_user.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
             try:
                 data = call.data.split()
@@ -153,7 +153,7 @@ class Server:
                     self.logger.error(f"An unknown call with 'remove', call: {call}")
                     self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                     self.bot.answer_callback_query(call.id, "")
-                    self.bot.send_message(call.from_user.id, msg)
+                    self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                 else:
                     book_id = data[1]
                     book = self.db.get_book({"_id": ObjectId(book_id)})
@@ -162,16 +162,16 @@ class Server:
                         msg = f"Stopped track the book: {book['book_url']}."
                         self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
-                        self.bot.send_message(call.from_user.id, msg)
+                        self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                     else:
                         msg = f"The book {book['book_url']} is already not tracking."
                         self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
-                        self.bot.send_message(call.from_user.id, msg)
+                        self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
             except StoreApiException as ex:
                 self.logger.critical(f"An exception occurred when executed '{call.data}' callback from the user: {call.from_user.id}")
                 self.logger.exception(ex)
-                self.bot.send_message(call.from_user.id, "Sorry, an unknown error occurred.")
+                self.bot.send_message(call.from_user.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
         # message itself is a valid link to one of supported platform
         @self.bot.message_handler(func=lambda message: True)
@@ -179,14 +179,14 @@ class Server:
             self.logger.debug("Got a message: " + str(message))
             if not self.has_rights(message.chat.id):
                 self.logger.info(f"Sending to the user {message.chat.id} a message {Server.NOT_ALLOWED}")
-                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED)
+                self.bot.send_message(message.chat.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                 return
             try:
                 book_info = self.requester.request_book(message.text, force_request=False)
                 if book_info is None:
                     msg = f"Sorry, but the book {message.text} was not found."
                     self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-                    self.bot.send_message(message.chat.id, msg)
+                    self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
                 else:
                     book_url = book_info["book_url"]
                     if self.db.is_subscribed_on_book(message.chat.id, book_url):
@@ -211,11 +211,11 @@ class Server:
                 self.logger.exception(ex)
                 msg = "Sorry, but the book was not found or maybe the link is not for one of the valid platform."
                 self.logger.info(f"Sending to the user {message.chat.id} message: {msg}")
-                self.bot.send_message(message.chat.id, msg)
+                self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
             except StoreApiException as ex:
                 self.logger.critical(f"An exception occurred when executed 'insert_link' for the user: {message.chat.id}")
                 self.logger.exception(ex)
-                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.")
+                self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.", reply_markup=remove_keyboard)
 
         self.start_polling()
 

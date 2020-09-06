@@ -126,7 +126,6 @@ class MongoPipeline(object):
         self.db = self.client[PIPELINE_MONGO_ITEM_DB]
         self.items = self.db[PIPELINE_MONGO_ITEM_TABLE]
 
-
     def close_spider(self, spider):
         self.logger.info("Closing spider " + spider.name)
         self.client.close()

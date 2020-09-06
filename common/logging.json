@@ -78,6 +78,15 @@
             "mode": "a",
             "maxBytes": 1048576,
             "backupCount": 10
+        },
+        "TelegramAlarm": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "simple",
+            "filename": "/home/nickolas/Development/Newspapper/logs/alert/TelegramAlarm.log",
+            "mode": "a",
+            "maxBytes": 1048576,
+            "backupCount": 10
         }
     },
     "loggers": {
@@ -121,7 +130,14 @@
             ],
             "propagate": "no"
         },
-
+        "TelegramAlarm": {
+            "level": "DEBUG",
+            "handlers": [
+                "TelegramAlarm",
+                "error"
+            ],
+            "propagate": "no"
+        },
         "": {
             "level": "DEBUG",
             "handlers": [

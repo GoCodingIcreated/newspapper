@@ -16,8 +16,9 @@ LOGGING_CONF_FILE_PATH = os.path.join(COMMON_PATH, "logging.json")
 MONGO_URL = "mongodb://localhost:27017"
 TOKEN_PATH = os.path.join(ALERT_TELEGRAM_PATH, "token.txt")
 
-PIPELINE_MONGO_ITEM_TABLE = "items"
 PIPELINE_MONGO_ITEM_DB = "crawler_storage"
+PIPELINE_MONGO_ITEM_TABLE = "items"
+
 # PIPELINE_JSON_DUMP_LOG_DIR = "../logs/crawl/dumps"
 PIPELINE_JSON_DUMP_LOG_DIR = os.path.join(LOGS_PATH, "crawl/dumps")
 
