@@ -56,7 +56,7 @@ class BookRequester:
 
                 if platform is None:
                     ex = BookRequesterException(f"There is no platform for book url {book_url}")
-                    self.logger.exception(ex)
+                    self.logger.warning(ex)
                     raise ex
                 validator = self.validators.get(platform)
                 if validator is None:

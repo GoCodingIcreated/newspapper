@@ -221,8 +221,7 @@ class Server:
                         self.bot.send_message(message.chat.id, msg, reply_markup=keyboard)
 
             except BookRequesterException as ex:
-                self.logger.error("An exception occurred when requested book from the requester.")
-                self.logger.exception(ex)
+                self.logger.info(f"A book from link {message.text} was not found by the Requester.")
                 msg = "Sorry, but the book was not found or maybe the link is not for one of the valid platform."
                 self.logger.info(f"Sending to the user {message.chat.id} message: {msg}")
                 self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)

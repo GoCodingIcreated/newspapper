@@ -43,15 +43,6 @@
             "maxBytes": 1048576,
             "backupCount": 10
         },
-        "Alarm": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "level": "DEBUG",
-            "formatter": "simple",
-            "filename": "/home/nickolas/Development/Newspapper/logs/alert/Alarm.log",
-            "mode": "a",
-            "maxBytes": 1048576,
-            "backupCount": 10
-        },
         "StoreApi": {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "DEBUG",
@@ -80,13 +71,11 @@
             "backupCount": 10
         },
         "TelegramAlarm": {
-            "class": "logging.handlers.RotatingFileHandler",
+            "class": "logging.FileHandler",
             "level": "DEBUG",
             "formatter": "simple",
             "filename": "/home/nickolas/Development/Newspapper/logs/alert/TelegramAlarm.log",
-            "mode": "a",
-            "maxBytes": 1048576,
-            "backupCount": 10
+            "mode": "w"
         }
     },
     "loggers": {
@@ -94,14 +83,6 @@
             "level": "DEBUG",
             "handlers": [
                 "Server",
-                "error"
-            ],
-            "propagate": "no"
-        },
-        "Alarm": {
-            "level": "DEBUG",
-            "handlers": [
-                "Alarm",
                 "error"
             ],
             "propagate": "no"
@@ -142,9 +123,7 @@
             "level": "DEBUG",
             "handlers": [
                 "console",
-                "error",
-                "debug",
-                "info"
+                "error"
             ]
         }
     }

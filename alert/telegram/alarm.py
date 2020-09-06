@@ -66,24 +66,27 @@ class TelegramAlarm:
     """
     def run(self):
         self.logger.info(f"Run alarm.")
-
-        for represent in self.db.get_platforms():
-            self.logger.debug(f"represent: {represent}")
-            for item in self.db.get_items_by_platform(represent["platform"]):
-                self.logger.debug(f"item: {item}")
-                book = self.db.get_book_by_item(item)
-                self.logger.debug(f"book: {book}")
-                if book is None:
-                    self.logger.warning(f"There is Item {item} without book in DB")
-                    continue
-                alert = self.db.get_alert_by_book(book)
-                self.logger.debug(f"alert: {alert}")
-                if alert is None or alert["inc_field"] < item["inc_field"]:
-                    self.logger.info(f"The book {book} has been updated. Sending alerts.")
-                    for track in self.db.get_tracks_by_book(book):
-                        self.send_alarm(track["chat_id"], represent["format"], item, book)
-                else:
-                    self.logger.info(f"No updates on the book {book}.")
+        try:
+            for represent in self.db.get_platforms():
+                self.logger.debug(f"represent: {represent}")
+                for item in self.db.get_items_by_platform(represent["platform"]):
+                    self.logger.debug(f"item: {item}")
+                    book = self.db.get_book_by_item(item)
+                    self.logger.debug(f"book: {book}")
+                    if book is None:
+                        self.logger.warning(f"There is Item {item} without book in DB")
+                        continue
+                    alert = self.db.get_alert_by_book(book)
+                    self.logger.debug(f"alert: {alert}")
+                    if alert is None or alert["inc_field"] < item["inc_field"]:
+                        self.logger.info(f"The book {book} has been updated. Sending alerts.")
+                        for track in self.db.get_tracks_by_book(book):
+                            self.send_alarm(track["chat_id"], represent["format"], item, book)
+                    else:
+                        self.logger.info(f"No updates on the book {book}.")
+        except StoreApiException as ex:
+            self.logger.critical(f"There is exception occurred during communication with DB")
+            self.logger.exception(ex)
 
         self.logger.info(f"Finish alarm.")
 
