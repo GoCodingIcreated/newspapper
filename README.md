@@ -5,7 +5,7 @@ Now it's mainly focused on <b>@Newspapper_bot</b> telegram bot.
 It allows track your favourite book updates in online mode.
 Just start with <b>@Newspapper_bot</b> and add some books to track.
 
-Supported bool platforms
+Supported book platforms:
   * author.today
   * litmarket.ru
   * webnovel.com
