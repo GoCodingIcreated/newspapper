@@ -15,7 +15,7 @@ class WebnovelSpider(scrapy.Spider):
     name = 'webnovel.com'
 
     def start_requests(self):
-        client = pymongo.MongoClient(variables.MONGO_URL)
+        client = pymongo.MongoClient(variables.MONGO_SPIDER_URL)
         books_db = client[variables.STORE_MONGO_BOOKS_DB]
         books_table = books_db[variables.STORE_MONGO_BOOKS_TABLE]
         urls = [item["book_url"] for item in books_table.find({"platform": self.name})]

@@ -14,7 +14,7 @@ import pymongo
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
-from common.vars import MONGO_URL
+from common.vars import MONGO_SPIDER_URL
 from common.vars import PIPELINE_MONGO_ITEM_TABLE
 from common.vars import PIPELINE_MONGO_ITEM_DB
 from common.vars import PIPELINE_JSON_DUMP_LOG_DIR
@@ -122,7 +122,7 @@ class MongoPipeline(object):
 
     def open_spider(self, spider):
         self.logger.info("Opening spider " + spider.name)
-        self.client = pymongo.MongoClient(MONGO_URL)
+        self.client = pymongo.MongoClient(MONGO_SPIDER_URL)
         self.db = self.client[PIPELINE_MONGO_ITEM_DB]
         self.items = self.db[PIPELINE_MONGO_ITEM_TABLE]
 

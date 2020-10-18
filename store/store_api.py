@@ -18,7 +18,7 @@ class StoreApiException(Exception):
 class StoreApi:
     def __init__(self):
         self.logger = logging.getLogger("StoreApi")
-        self.client = pymongo.MongoClient(variables.MONGO_URL)
+        self.client = pymongo.MongoClient(variables.MONGO_STORE_API_URL)
 
         self.track_db = self.client[variables.STORE_MONGO_BOOKS_TRACK_DB]
         self.track_table = self.track_db[variables.STORE_MONGO_BOOKS_TRACK_TABLE]
@@ -329,7 +329,7 @@ class StoreApi:
             field_name (required): name in result table for extracted field
             extraction_css (required): extraction string for bs4 selector
     """
-    def insert_platform_book_info_extraction(self, extractor):
+    def insert_platform_book_info_extractor(self, extractor):
         self.logger.debug(f"extractor: {extractor}")
         if extractor.get("platform") is None:
             ex = StoreApiException(f"A field platform is absent in extraction {extractor}")
@@ -392,7 +392,7 @@ class StoreApi:
 
     """
         book:
-            url (required): book URL 
+            book_url (required): book URL 
     """
     def get_alert_by_book(self, book):
         self.logger.debug(f"book: {book}")
@@ -406,6 +406,10 @@ class StoreApi:
         self.logger.debug(f"book: {book}, alert: {alert}")
         return alert
 
+    """
+        book:
+            book_url (required): book URL 
+    """
     def get_tracks_by_book(self, book):
         self.logger.debug(f"book: {book}")
         url = book.get("book_url")
@@ -418,6 +422,10 @@ class StoreApi:
         self.logger.debug(f"book: {book}, tracks: {tracks}")
         return tracks
 
+    """
+            item
+                url (required): url of the book
+        """
     def update_alert(self, alert):
         self.logger.debug(f"alert: {alert}")
         self.alarm_table.replace_one({"_id": alert["url"]}, alert, upsert=True)

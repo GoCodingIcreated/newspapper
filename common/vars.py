@@ -1,7 +1,10 @@
 import os
 import sys
 from pathlib import Path
-
+from .credentionals import MONGO_IP, MONGO_PORT
+from .credentionals import MONGO_STORE_API_USER, MONGO_STORE_API_PSWD
+from .credentionals import MONGO_ALARM_USER, MONGO_ALARM_PSWD
+from .credentionals import MONGO_SPIDER_USER, MONGO_SPIDER_PSWD
 
 PROJECT_PATH = Path(__file__).parent.parent
 ALERT_PATH = os.path.join(PROJECT_PATH, "alert")
@@ -13,7 +16,12 @@ COMMON_PATH = os.path.join(PROJECT_PATH, "common")
 
 LOGGING_CONF_FILE_PATH = os.path.join(COMMON_PATH, "logging.json")
 
-MONGO_URL = "mongodb://localhost:27017"
+
+MONGO_STORE_API_URL = f"mongodb://{MONGO_STORE_API_USER}:{MONGO_STORE_API_PSWD}@{MONGO_IP}:{MONGO_PORT}"
+MONGO_ALARM_URL = f"mongodb://{MONGO_ALARM_USER}:{MONGO_ALARM_PSWD}@{MONGO_IP}:{MONGO_PORT}"
+MONGO_SPIDER_URL = f"mongodb://{MONGO_SPIDER_USER}:{MONGO_SPIDER_PSWD}@{MONGO_IP}:{MONGO_PORT}"
+
+
 TOKEN_PATH = os.path.join(ALERT_TELEGRAM_PATH, "token.txt")
 
 PIPELINE_MONGO_ITEM_DB = "crawler_storage"
