@@ -5,3 +5,5 @@ logs/*
 token.txt
 store/*.db
 *.html
+common/credentionals.py
+setup.sh
