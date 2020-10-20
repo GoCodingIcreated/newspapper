@@ -95,5 +95,10 @@ if __name__ == "__main__":
     with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:
         conf_dict = json.load(f)
     logging.config.dictConfig(conf_dict)
-    alarm = TelegramAlarm()
-    alarm.run()
+    try:
+        alarm = TelegramAlarm()
+        alarm.run()
+    except Exception as ex:
+        logger = logging.getLogger("TelegramAlarm")
+        logger.critical("The Alarm stopped due to an unknown exception.")
+        logger.exception(ex)
