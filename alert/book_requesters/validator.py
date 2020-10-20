@@ -26,11 +26,9 @@ class Validator:
             raise ValidatorException(f"There is no such platform {platform}")
         self.platform = platform["_id"]
 
-
-
     def validate_book(self, resp):
         self.logger.info("Validating book")
-        page_content = resp.content
+        page_content = str(resp.content)
 
         if resp.status_code != 200:
             self.logger.info(f"Not 200 response code. Actual code is {resp.status_code}")
