@@ -231,7 +231,7 @@ class Server:
                     if book_info is None:
                         msg = f"Sorry, but the book {message.text} was not found."
                         self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-                        self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard)
+                        self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard, disable_web_page_preview=True)
                     else:
                         book_url = book_info["book_url"]
                         if self.db.is_subscribed_on_book(message.chat.id, book_url):
