@@ -26,7 +26,9 @@ class WebnovelSpider(scrapy.Spider):
     def parse(self, response):
         data = response.css("script").re_first(r"g_data.book = (.*);")
         self.logger.debug("Response: %s" % data)
-        data = data.replace("\\ ", " ")
+        data = data.replace('\\"', "\\'")
+        data = data.encode('unicode_escape')
+        #data = data.replace("\\ ", " ")
         meta = json.loads(data)
         last_relative_modify_dttm = meta["bookInfo"]["newChapterTime"].replace('\\', '')
         yield WebnoveItem(url=response.url,
