@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from store.store_api import StoreApi
+from store_api import StoreApi
 
 if __name__ == "__main__":
     api = StoreApi()

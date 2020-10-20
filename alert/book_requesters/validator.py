@@ -37,7 +37,7 @@ class Validator:
         self.logger.debug(f"validating a book, platform: {self.platform},"
                           f" validation_book_platform_regexps: {validation_book_platform_regexps}")
         for regexp in validation_book_platform_regexps:
-            if re.search(validation_book_platform_regexps, page_content) is None:
+            if re.search(regexp["regexp"], page_content) is None:
                 self.logger.debug(f"validation a book, platform: {self.platform},"
                                   f" validation_book_platform_regexp: {regexp}, check failed")
                 return False
