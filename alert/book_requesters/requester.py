@@ -82,8 +82,13 @@ class BookRequester:
             if book is not None:
                 self.logger.info(f"Returning a book: {book} from DB")
                 return book
+        try:
+            resp = requests.get(url)
+        except requests.exceptions.MissingSchema as ex:
+            self.logger.debug(f"book_url: {book_url}: Missed http schema. Automatically add 'https://' to url and retry.")
+            url = "https://" + url
+            resp = requests.get(url)
 
-        resp = requests.get(url)
         new_book_url = resp.url
         self.logger.debug(f"book_url: {book_url}, response status: {resp.status_code}, new_book_url: {new_book_url}")
 

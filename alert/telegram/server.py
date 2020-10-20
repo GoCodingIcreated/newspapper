@@ -128,7 +128,7 @@ class Server:
             try:
                 data = call.data.split()
                 if len(data) != 2:
-                    msg = "An unknown button pressed."
+                    msg = "An unknown button was pressed."
                     self.logger.error(f"An unknown call with 'add', call: {call}")
                     self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                     self.bot.answer_callback_query(call.id, "")
@@ -143,7 +143,7 @@ class Server:
                         self.bot.answer_callback_query(call.id, "")
                         self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                     else:
-                        msg = f"Book: {book['book_url']} is already tracking."
+                        msg = f"Book: {book['book_url']} has been already tracked."
                         self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
                         self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
@@ -178,7 +178,7 @@ class Server:
                         self.bot.answer_callback_query(call.id, "")
                         self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                     else:
-                        msg = f"The book {book['book_url']} is already not tracking."
+                        msg = f"The book {book['book_url']} has been already not tracked."
                         self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
                         self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
