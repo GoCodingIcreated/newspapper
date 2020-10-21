@@ -15,7 +15,6 @@ from store.store_api import StoreApiException
 from store.store_api import StoreApi
 
 import alert.book_requesters.requester as requester
-
 from alert.book_requesters.requester import BookRequesterException
 
 
@@ -161,12 +160,20 @@ class Server:
                             self.db.add_track_book_telegram(call.from_user.id, book)
                             msg = f"Start tracking the book: {book['book_url']}."
                             self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
+                            keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
+                            self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
+                                                               message_id=call.message.message_id,
+                                                               reply_markup=keyboard)
                             self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                         else:
                             msg = f"Book: {book['book_url']} has been already tracked."
                             self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
+                            keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
+                            self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
+                                                               message_id=call.message.message_id,
+                                                               reply_markup=keyboard)
                             self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                 except StoreApiException as ex:
                     self.logger.error(f"An exception occurred when executed '{call.data}' callback for the user: {call.from_user.id}")
@@ -201,12 +208,20 @@ class Server:
                             self.db.remove_track_book_telegram(call.from_user.id, book)
                             msg = f"Stopped track the book: {book['book_url']}."
                             self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
+                            keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
+                            self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
+                                                               message_id=call.message.message_id,
+                                                               reply_markup=keyboard)
                             self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                         else:
                             msg = f"The book {book['book_url']} has been already not tracked."
                             self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
+                            keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
+                            self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
+                                                               message_id=call.message.message_id,
+                                                               reply_markup=keyboard)
                             self.bot.send_message(call.from_user.id, msg, reply_markup=remove_keyboard)
                 except StoreApiException as ex:
                     self.logger.error(f"An exception occurred when executed '{call.data}' callback from the user: {call.from_user.id}")
@@ -288,6 +303,37 @@ class Server:
         keyboard.add(telebot.types.InlineKeyboardButton("Remove", callback_data=f"remove {book_id}"))
         return keyboard
 
+    def get_revert_keyboard(self, call):
+        self.logger.debug(f"call: {call}")
+        try:
+            data = call.message.json["reply_markup"]["inline_keyboard"][0][0]["callback_data"]
+        except KeyError | IndexError as ex:
+            self.logger.error(f"Excepted the InlineKeyboardButton with callback data, call: {call}")
+            return None
+        self.logger.info(f"data: {data}, call: {call}")
+        if data is None:
+            self.logger.error(f"Empty data in callback, call: {call}")
+            return None
+
+        type, book_id = data.split()
+        new_type = None
+        button_text = None
+        if type == "add":
+            new_type = "remove"
+            button_text = "Remove"
+        elif type == "remove":
+            new_type = "add"
+            button_text = "Add"
+        else:
+            self.logger.error(f"Unknown callback type. Expected 'add' or 'remove', got: {type}, call: {call}")
+            return None
+
+        new_callback_data = f"{new_type} {book_id}"
+        self.logger.info(f"New callback data: {new_callback_data}, button text: {button_text}")
+        self.logger.debug(f"call: {call}, new_callback_data: {new_callback_data}, button_text: {button_text}")
+        new_keyboard = telebot.types.InlineKeyboardMarkup()
+        new_keyboard.add(telebot.types.InlineKeyboardButton(button_text, callback_data=new_callback_data))
+        return new_keyboard
 
 if __name__ == "__main__":
     with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:
