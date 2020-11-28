@@ -144,7 +144,7 @@ class StoreApi:
             self.logger.info(f"The book {book_info} is already not tracking for the user {chat_id}")
         else:
             self.logger.info(f"Stop tracking a book {book} for the user {chat_id}")
-            del user["books"]["book_url"]
+            del user["books"][book_url]
             # TODO: replace replace to update
             self.users_table.replace_one({"chat_id": chat_id}, user)
 

@@ -65,7 +65,7 @@ class TelegramAlarm:
         try:
             for user in self.db.get_users():
                 is_user_modified = False
-                if user["pause"] == True:
+                if user.get("pause") == True:
                     self.logger.info(f"User {user['chat_id']} paused his notifications")
                     continue
                 for book_url in user["books"].keys():
@@ -86,9 +86,25 @@ class TelegramAlarm:
                         book["name"] = item.get("name")
                         book["last_modify_dttm"] = item.get("last_modify_dttm")
                         book["processed_dttm"] = item.get("processed_dttm")
+                        item_last_chapter_index = item.get("last_chapter_index", 0) \
+                            if item.get("last_chapter_index", 0) is not None \
+                            else 0
+                        book_last_chapter_index = book.get("last_chapter_index", 0) \
+                            if book.get("last_chapter_index", 0) is not None \
+                            else 0
+                        diff_last_chapter_index = int(item_last_chapter_index) - int(book_last_chapter_index)
+                        book["diff_last_chapter_index"] = diff_last_chapter_index
                         book["last_chapter_index"] = item.get("last_chapter_index")
-                        book["last_relative_modify_dttm"] = item.get("last_relative_modify_dttm")
+                        item_last_pages_number = item.get("last_pages_number", 0)\
+                            if item.get("last_pages_number", 0) is not None\
+                            else 0
+                        book_last_pages_number = book.get("last_pages_number", 0)\
+                            if book.get("last_pages_number", 0) is not None\
+                            else 0
+                        diff_last_pages_number = int(item_last_pages_number) - int(book_last_pages_number)
+                        book["diff_last_pages_number"] = diff_last_pages_number
                         book["last_pages_number"] = item.get("last_pages_number")
+                        book["last_relative_modify_dttm"] = item.get("last_relative_modify_dttm")
                         fmt = self.db.get_platform_representaion(book["platform"])
                         self.send_alarm(user["chat_id"], fmt, item, book)
 
