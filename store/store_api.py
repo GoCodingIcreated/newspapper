@@ -20,8 +20,8 @@ class StoreApi:
         self.logger = logging.getLogger("StoreApi")
         self.client = pymongo.MongoClient(variables.MONGO_STORE_API_URL)
 
-        self.track_db = self.client[variables.STORE_MONGO_BOOKS_TRACK_DB]
-        self.track_table = self.track_db[variables.STORE_MONGO_BOOKS_TRACK_TABLE]
+        # self.track_db = self.client[variables.STORE_MONGO_BOOKS_TRACK_DB]
+        # self.track_table = self.track_db[variables.STORE_MONGO_BOOKS_TRACK_TABLE]
 
         self.users_db = self.client[variables.STORE_MONGO_USERS_DB]
         self.users_table = self.users_db[variables.STORE_MONGO_USERS_TABLE]
@@ -83,18 +83,28 @@ class StoreApi:
             self.logger.exception(ex)
             raise ex
 
-        if self.users_table.find_one({"chat_id": chat_id}) is not None:
-            if self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is None:
-                self.add_book(book)
-                self.logger.info(f"Start tracking a book {book} for the user {chat_id}")
-                self.track_table.insert_one({"chat_id": chat_id, "book_url": book_url})
-            else:
-                self.logger.info(f"The book {book_url} is already tracking for the user {chat_id}")
-        else:
+        user = self.users_table.find_one({"chat_id": chat_id})
+        if user is None:
             ex = StoreApiException(f"There is no such user with chat_id: {chat_id}")
             self.logger.error(f"There is no such user with chat_id: {chat_id}")
             self.logger.exception(ex)
             raise ex
+
+        is_tracked = False
+
+        if user["books"].get(book_url) is not None:
+            self.logger.info(f"The book {book_url} is already tracking for the user {chat_id}")
+        else:
+            self.add_book(book)
+            self.logger.info(f"Start tracking a book {book} for the user {chat_id}")
+            user["books"][book_url] = {
+                "book_url": book_url,
+                "pause": False
+            }
+            # TODO: replace replace to update
+            self.logger.debug(f"Updated user: {user}")
+            self.users_table.replace_one({"chat_id": chat_id}, user)
+
 
     """
         chat_id: string\int number
@@ -110,7 +120,7 @@ class StoreApi:
         book = self.book_table.find_one(book_info)
 
         self.logger.debug(f"chat_id: {chat_id}, book_info: {book_info}, book: {book}")
-        if book is None:
+        if book["book_url"] is None:
             ex = StoreApiException(f"There is no such book with info: {book_info}")
             self.logger.debug(f"There is no such book with info: {book_info}")
             self.logger.exception(ex)
@@ -122,26 +132,44 @@ class StoreApi:
             self.logger.exception(ex)
             raise ex
 
-        if self.users_table.find_one({"chat_id": chat_id}) is not None:
-            if self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is not None:
-                self.track_table.delete_one({"chat_id": chat_id, "book_url": book_url})
-            else:
-                self.logger.info(f"The book {book_info} is already not tracking for the user {chat_id}")
-        else:
+        user = self.users_table.find_one({"chat_id": chat_id})
+        if user is None:
             ex = StoreApiException(f"There is no such user with chat_id: {chat_id}")
             self.logger.debug(f"There is no such user with chat_id: {chat_id}")
             self.logger.exception(ex)
             raise ex
 
+        is_tracked = False
+        if user["books"].get(book_url) is None:
+            self.logger.info(f"The book {book_info} is already not tracking for the user {chat_id}")
+        else:
+            self.logger.info(f"Stop tracking a book {book} for the user {chat_id}")
+            del user["books"]["book_url"]
+            # TODO: replace replace to update
+            self.users_table.replace_one({"chat_id": chat_id}, user)
+
+
     """
         chat_id: string\int number
+        pause: True\False
+        books: [   
+            book_url: {
+                "book_url" : book_url,
+                "last_chapter": chapter,
+                "last_page": page,
+                "last_modify_dttm": dttm,
+                "last_alert_time": dttm,
+                "pause": True/False,
+                "platform": platform
+            }
+        ]
     """
     def add_telegram_user(self, chat_id):
         self.logger.debug(f"chat_id: {chat_id}")
         chat_id = str(chat_id)
         if self.users_table.find_one({"chat_id": chat_id}) is None:
             self.logger.info(f"Adding a new user {chat_id}.")
-            self.users_table.insert_one({"chat_id": chat_id})
+            self.users_table.insert_one({"chat_id": chat_id, "books": {}, "pause": False})
         else:
             self.logger.info(f"The user {chat_id} is already in the DB.")
 
@@ -249,11 +277,14 @@ class StoreApi:
         self.logger.debug(f"chat_id: {chat_id}")
         chat_id = str(chat_id)
         books = []
-        tracks = list(self.track_table.find({"chat_id": chat_id}))
+
+        tracks = self.users_table.find_one({"chat_id": chat_id})["books"]
         self.logger.debug(f"chat_id: {chat_id}, tracks: {tracks}")
-        for track in tracks:
-            book = self.book_table.find_one({"book_url": track["book_url"]})
-            books.append(book)
+
+        books = tracks.values()
+        # for track in tracks:
+            # book = self.book_table.find_one({"book_url": book_url})
+            # books.append(track)
         self.logger.debug(f"chat_id: {chat_id}, book: {books}")
         return books
 
@@ -365,7 +396,10 @@ class StoreApi:
     def is_subscribed_on_book(self, chat_id, book_url):
         chat_id = str(chat_id)
         self.logger.debug(f"chat_id: {chat_id}, book_url: {book_url}")
-        return self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is not None
+        user = self.users_table.find_one({"chat_id": chat_id})
+        return user["books"].get(book_url) is not None
+
+        # return self.track_table.find_one({"chat_id": chat_id, "book_url": book_url}) is not None
 
     """
         platform (required): name of platform, string
@@ -410,6 +444,7 @@ class StoreApi:
         book:
             book_url (required): book URL 
     """
+    """
     def get_tracks_by_book(self, book):
         self.logger.debug(f"book: {book}")
         url = book.get("book_url")
@@ -421,15 +456,60 @@ class StoreApi:
         tracks = list(self.track_table.find({"book_url": url}))
         self.logger.debug(f"book: {book}, tracks: {tracks}")
         return tracks
+    """
 
     """
             item
                 url (required): url of the book
         """
-    def update_alert(self, alert):
-        self.logger.debug(f"alert: {alert}")
-        self.alarm_table.replace_one({"_id": alert["url"]}, alert, upsert=True)
+    def update_user_alerts(self, user):
+        self.logger.debug(f"user: {user}")
+        self.users_table.replace_one({"chat_id": user["chat_id"]}, user)
 
+    def get_users(self):
+        return list(self.users_table.find())
+
+
+    def get_platform_representaion(self, platform):
+        self.logger.debug(f"platform: {platform}")
+        return self.representation_table.find_one({"platform": platform})["format"]
+
+    def get_item_by_book(self, book):
+        self.logger.debug(f"book: {book}")
+        return self.items_table.find_one({"url": book["book_url"]})
+
+    def user_pause_alerts(self, user):
+        self.logger.debug(f"user: {user}")
+        # TODO: replace replace to update
+        user_in_db = self.users_table.find_one({"chat_id": user["chat_id"]})
+        user_in_db["pause"] = True
+        self.users_table.replace_one({"chat_id": user["chat_id"]}, user_in_db)
+
+    def user_unpause_alerts(self, user):
+        self.logger.debug(f"user: {user}")
+        # TODO: replace replace to update
+        user_in_db = self.users_table.find_one({"chat_id": user["chat_id"]})
+        user_in_db["pause"] = False
+        self.users_table.replace_one({"chat_id": user["chat_id"]}, user_in_db)
+
+    def user_pause_book(self, user, book_url):
+        self.logger.debug(f"user: {user}, book_url: {book_url}")
+        user_in_db = self.users_table.find_one({"chat_id": user["chat_id"]})
+        if user_in_db["books"].get(book_url) is None:
+            self.logger.warning("Tried to pause untracked book")
+        else:
+            user_in_db["books"][book_url]["pause"] = True
+            self.users_table.replace_one({"chat_id": user["chat_id"]}, user_in_db)
+
+
+    def user_unpause_book(self, user, book_url):
+        self.logger.debug(f"user: {user}, book_url: {book_url}")
+        user_in_db = self.users_table.find_one({"chat_id": user["chat_id"]})
+        if user_in_db["books"].get(book_url) is None:
+            self.logger.warning("Tried to unpause untracked book")
+        else:
+            user_in_db["books"][book_url]["pause"] = False
+            self.users_table.replace_one({"chat_id": user["chat_id"]}, user_in_db)
 
 if __name__ == "__main__":
     with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:

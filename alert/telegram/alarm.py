@@ -23,15 +23,11 @@ class TelegramAlarm:
             token = f.readline()
         self.bot = telebot.TeleBot(token)
 
-    def update_item_alert(self, item):
-        self.logger.info(f"Updating item's alert: {item}")
-        self.db.update_alert(item)
-
     def send_alarm(self, chat_id, fmt, item, book):
         self.logger.info(f"Sending alarm to the user {chat_id} with the format '{fmt}' because of the book {book}")
         msg = self.parse(item, book, fmt)
         self.bot.send_message(chat_id, msg, parse_mode="HTML", disable_notification=True)
-        self.update_item_alert(item)
+        # self.update_item_alert(item)
 
     def parse(self, item, book, fmt):
         self.logger.info(f"Parsing item: {item}, book: {book}, fmt: '{fmt}'")
@@ -67,23 +63,41 @@ class TelegramAlarm:
     def run(self):
         self.logger.info(f"Run alarm.")
         try:
-            for represent in self.db.get_platforms():
-                self.logger.debug(f"represent: {represent}")
-                for item in self.db.get_items_by_platform(represent["platform"]):
-                    self.logger.debug(f"item: {item}")
-                    book = self.db.get_book_by_item(item)
-                    self.logger.debug(f"book: {book}")
-                    if book is None:
-                        self.logger.warning(f"There is Item {item} without book in DB")
+            for user in self.db.get_users():
+                is_user_modified = False
+                if user["pause"] == True:
+                    self.logger.info(f"User {user['chat_id']} paused his notifications")
+                    continue
+                for book_url in user["books"].keys():
+                    book = user["books"][book_url]
+                    if book.get("pause", True):
+                        self.logger.info(f"User {user['chat_id']} paused his notifications for book {book}")
                         continue
-                    alert = self.db.get_alert_by_book(book)
-                    self.logger.debug(f"alert: {alert}")
-                    if alert is None or alert["inc_field"] < item["inc_field"]:
-                        self.logger.info(f"The book {book} has been updated. Sending alerts.")
-                        for track in self.db.get_tracks_by_book(book):
-                            self.send_alarm(track["chat_id"], represent["format"], item, book)
-                    else:
-                        self.logger.info(f"No updates on the book {book}.")
+                    item = self.db.get_item_by_book(book)
+                    if item is None:
+                        self.logger.warning(f"Book {book} has no item")
+                        continue
+                    if book.get("inc_field") is None or book["inc_field"] < item["inc_field"]:
+                        is_user_modified = True
+                        self.logger.info(f"Updating book for user: {user['chat_id']}, old book: {book}, item: {item}")
+                        book["inc_field"] = item["inc_field"]
+                        book["platform"] = item["source_crawler"]
+                        book["description"] = item.get("description")
+                        book["name"] = item.get("name")
+                        book["last_modify_dttm"] = item.get("last_modify_dttm")
+                        book["processed_dttm"] = item.get("processed_dttm")
+                        book["last_chapter_index"] = item.get("last_chapter_index")
+                        book["last_relative_modify_dttm"] = item.get("last_relative_modify_dttm")
+                        book["last_pages_number"] = item.get("last_pages_number")
+                        fmt = self.db.get_platform_representaion(book["platform"])
+                        self.send_alarm(user["chat_id"], fmt, item, book)
+
+                if is_user_modified:
+                    self.logger.info(f"Updating user: {user}")
+                    self.db.update_user_alerts(user)
+                else:
+                    self.logger.info(f"Nothing to update for user: {user}")
+
         except StoreApiException as ex:
             self.logger.critical(f"There is exception occurred during communication with DB")
             self.logger.exception(ex)

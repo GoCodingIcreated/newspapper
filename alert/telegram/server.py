@@ -85,6 +85,39 @@ class Server:
                     f"An exception occurred when started an interaction with the user: {message.chat.id}")
                 self.logger.exception(ex)
 
+        @self.bot.message_handler(commands=['pause', 'unpause'])
+        def handler_pause(message):
+            try:
+                self.logger.debug("Got a message: " + str(message))
+                if not self.has_rights(message.chat.id):
+                    self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
+                    self.bot.send_message(message.chat.id, Server.NOT_ALLOWED, reply_markup=remove_keyboard)
+                    return
+                try:
+                    if message.text == "/pause":
+                        self.db.user_pause_alerts({"chat_id": str(message.chat.id)})
+                        msg = "Paused notifications for books"
+                    elif message.text == "/unpause":
+                        self.db.user_unpause_alerts({"chat_id": str(message.chat.id)})
+                        msg = "Unpaused notifications for books"
+                    else:
+                        self.logger.critical(f"Unknown command: {message.text}")
+                        return
+                    self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
+                    self.bot.send_message(message.chat.id, msg, reply_markup=remove_keyboard,
+                                          disable_web_page_preview=True)
+
+                except StoreApiException as ex:
+                    self.logger.error(
+                        f"An exception occurred when executed '/pause' command for the user: {message.chat.id}")
+                    self.logger.exception(ex)
+                    self.bot.send_message(message.chat.id, "Sorry, an unknown error occurred.",
+                                          reply_markup=remove_keyboard)
+            except Exception as ex:
+                self.logger.critical(
+                    f"An exception occurred when started an interaction with the user: {message.chat.id}")
+                self.logger.exception(ex)
+
         @self.bot.message_handler(commands=['platforms'])
         def handler_platforms(message):
             try:
