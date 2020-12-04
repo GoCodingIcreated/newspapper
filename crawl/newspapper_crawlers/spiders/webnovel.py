@@ -24,7 +24,7 @@ class WebnovelSpider(scrapy.Spider):
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
-        data = response.css("script").re_first(r"g_data.book = (.*);")
+        data = response.css("script").re_first(r"g_data.book= (.*)</script>")
         self.logger.debug("Response: %s" % data)
         data = data.replace('\\"', "\\'")
         data = data.encode('unicode_escape')
