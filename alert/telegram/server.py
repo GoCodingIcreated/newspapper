@@ -346,11 +346,12 @@ class Server:
         return output
 
     def escape_characters(self, msg):
-        characters = {
-            "<": "&lt",
-            ">": "&gt"
-        }
-        for item in characters.items():
+        characters = [
+            ("&", "&amp;"),
+            ("<", "&lt;"),
+            (">", "&gt;"),
+        ]
+        for item in characters:
             msg = msg.replace(item[0], item[1])
         return msg
 
