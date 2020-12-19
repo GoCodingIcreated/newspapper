@@ -282,9 +282,7 @@ class StoreApi:
         self.logger.debug(f"chat_id: {chat_id}, tracks: {tracks}")
 
         books = tracks.values()
-        # for track in tracks:
-            # book = self.book_table.find_one({"book_url": book_url})
-            # books.append(track)
+
         self.logger.debug(f"chat_id: {chat_id}, book: {books}")
         return books
 
