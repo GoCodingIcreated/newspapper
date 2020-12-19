@@ -330,9 +330,9 @@ class Server:
         for num, sub in enumerate(subscriptions, start=1):
             url = sub['book_url'] + "\n"
             if len(sub['description']) < MAX_DESCRIPTION_LENGTH:
-                description = sub['description'] + "\n"
+                description = self.escape_characters(sub['description']) + "\n"
             else:
-                description = " ".join(sub['description'][0:MAX_DESCRIPTION_LENGTH + 1].split()[0:-1]) + "...\n"
+                description = " ".join(self.escape_characters(sub['description'])[0:MAX_DESCRIPTION_LENGTH + 1].split()[0:-1]) + "...\n"
             last_update = f"<b>Last update</b>: {sub['last_modify_dttm']}\n"
             last_chapter_index_str = ""
             if sub.get('last_chapter_index') is not None:
@@ -344,6 +344,15 @@ class Server:
         output = "<b>Subscriptions:</b>\n\n" + output
 
         return output
+
+    def escape_characters(self, msg):
+        characters = {
+            "<": "&lt",
+            ">": "&gt"
+        }
+        for item in characters.items():
+            msg = msg.replace(item[0], item[1])
+        return msg
 
     def has_rights(self, user_id):
         return self.db.has_user(str(user_id))
