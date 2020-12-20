@@ -322,6 +322,10 @@ class Server:
         if sub.get('book_url') is not None:
             url = sub['book_url'] + "\n"
 
+        name = ""
+        if sub.get('name') is not None:
+            name = f"<b>Title:</b> {sub['name']}\n"
+
         description = ""
         if sub.get('description') is not None:
             if len(sub['description']) < MAX_DESCRIPTION_LENGTH:
@@ -346,7 +350,7 @@ class Server:
         if sub.get('last_pages_number') is not None:
             last_pages_number_str = f"<b>Total pages</b>: {sub['last_pages_number']}\n"
 
-        return f"{url}{last_update}{last_fetch}{last_chapter_index_str}{last_pages_number_str}{description}\n"
+        return f"{url}{name}{last_update}{last_fetch}{last_chapter_index_str}{last_pages_number_str}{description}\n"
 
     def get_book_info(self, subscriptions, book_url):
         if subscriptions.get(book_url) is None:
