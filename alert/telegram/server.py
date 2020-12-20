@@ -39,7 +39,6 @@ class Server:
             try:
                 self.logger.debug("Got a message: " + str(message))
                 if not self.has_rights(message.chat.id):
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
                     self.send_message(chat_id=message.chat.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
                 self.logger.info(f"Adding a new user {message.chat.id}")
@@ -69,7 +68,6 @@ class Server:
             try:
                 self.logger.debug("Got a message: " + str(message))
                 if not self.has_rights(message.chat.id):
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
                     self.send_message(chat_id=message.chat.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
                 try:
@@ -77,7 +75,6 @@ class Server:
                     # book_urls = [sub["book_url"] for sub in subscriptions]
                     # msg = "Subscriptions: \n" + "\n\n".join(book_urls)
                     msg = str(subscriptions)
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
 
                     self.send_message(chat_id=message.chat.id, text=msg,
                                           reply_markup=remove_keyboard,
@@ -97,14 +94,12 @@ class Server:
             try:
                 self.logger.debug("Got a message: " + str(message))
                 if not self.has_rights(message.chat.id):
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
                     self.send_message(chat_id=message.chat.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
                 try:
                     if message.text == "/pause":
                         self.db.user_pause_alerts({"chat_id": str(message.chat.id)})
                         msg = "Paused notifications for books"
-                        self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
                         self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard,
                                           disable_web_page_preview=True)
                     elif message.text == "/unpause":
@@ -112,7 +107,7 @@ class Server:
 
                         self.db.user_unpause_alerts({"chat_id": str(message.chat.id)})
                         msg = "Unpaused notifications for books"
-                        self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
+
                         self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard,
                                           disable_web_page_preview=True)
                         telegram_alarm.process_user(self.db.get_user(str(message.chat.id)), force_notification=True)
@@ -137,13 +132,11 @@ class Server:
             try:
                 self.logger.debug("Got a message: " + str(message))
                 if not self.has_rights(message.chat.id):
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
                     self.send_message(chat_id=message.chat.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
                 try:
                     platforms = [p["url"] for p in self.db.get_platforms()]
                     msg = f"Available platforms: {', '.join(platforms)}"
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
                     self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard)
                 except StoreApiException as ex:
                     self.logger.error(f"An exception occurred when executed '/platforms' command for the user: {message.chat.id}")
@@ -159,7 +152,6 @@ class Server:
             try:
                 self.logger.debug("Got a message: " + str(message))
                 if not self.has_rights(message.chat.id):
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {Server.NOT_ALLOWED}")
                     self.send_message(chat_id=message.chat.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
                 try:
@@ -171,7 +163,6 @@ class Server:
                               f"\t/list - Get current subscriptions.\n" \
                               f"\t/platforms - Get list of available platforms.\n" \
                               f"\t/help - Get list of allowed commands.\n"
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
                     self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard, disable_web_page_preview=True)
                 except StoreApiException as ex:
                     self.logger.error(f"An exception occurred when executed '/help' command for the user: {message.chat.id}")
@@ -188,7 +179,6 @@ class Server:
             try:
                 self.logger.debug("Got a message: " + str(call))
                 if not self.has_rights(call.from_user.id):
-                    self.logger.info(f"Sending to the user {call.form_user.id}, a message: {Server.NOT_ALLOWED}")
                     self.bot.answer_callback_query(call.id, "")
                     self.send_message(chat_id=call.form_user.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
@@ -197,7 +187,6 @@ class Server:
                     if len(data) != 2:
                         msg = "An unknown button was pressed."
                         self.logger.error(f"An unknown call with 'add', call: {call}")
-                        self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
                         self.send_message(chat_id=call.from_user.id, text=msg, reply_markup=remove_keyboard)
                     else:
@@ -206,7 +195,6 @@ class Server:
                         if not self.db.is_subscribed_on_book(call.from_user.id, book["book_url"]):
                             self.db.add_track_book_telegram(call.from_user.id, book)
                             msg = f"Start tracking the book: {book['book_url']}."
-                            self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                             keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
                             self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
@@ -215,7 +203,6 @@ class Server:
                             self.send_message(chat_id=call.from_user.id, text=msg, reply_markup=remove_keyboard)
                         else:
                             msg = f"Book: {book['book_url']} has been already tracked."
-                            self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                             keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
                             self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
@@ -236,7 +223,6 @@ class Server:
             try:
                 self.logger.debug("Got a call: " + str(call))
                 if not self.has_rights(call.from_user.id):
-                    self.logger.info(f"Sending to the user {call.form_user.id}, a message: {Server.NOT_ALLOWED}")
                     self.bot.answer_callback_query(call.id, "")
                     self.send_message(chat_id=call.form_user.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
@@ -245,7 +231,6 @@ class Server:
                     if len(data) != 2:
                         msg = "An unknown button pressed."
                         self.logger.error(f"An unknown call with 'remove', call: {call}")
-                        self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                         self.bot.answer_callback_query(call.id, "")
                         self.send_message(chat_id=call.from_user.id, text=msg, reply_markup=remove_keyboard)
                     else:
@@ -254,7 +239,6 @@ class Server:
                         if self.db.is_subscribed_on_book(call.from_user.id, book["book_url"]):
                             self.db.remove_track_book_telegram(call.from_user.id, book)
                             msg = f"Stopped track the book: {book['book_url']}."
-                            self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                             keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
                             self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
@@ -263,7 +247,6 @@ class Server:
                             self.send_message(chat_id=call.from_user.id, text=msg, reply_markup=remove_keyboard)
                         else:
                             msg = f"The book {book['book_url']} has been already not tracked."
-                            self.logger.info(f"Sending to the user {call.from_user.id} a message: {msg}")
                             keyboard = self.get_revert_keyboard(call)
                             self.bot.answer_callback_query(call.id, "")
                             self.bot.edit_message_reply_markup(chat_id=call.from_user.id,
@@ -285,14 +268,12 @@ class Server:
             try:
                 self.logger.debug("Got a message: " + str(message))
                 if not self.has_rights(message.chat.id):
-                    self.logger.info(f"Sending to the user {message.chat.id} a message {Server.NOT_ALLOWED}")
                     self.send_message(chat_id=message.chat.id, text=Server.NOT_ALLOWED, reply_markup=remove_keyboard)
                     return
                 try:
                     book_info = self.requester.request_book(message.text, force_request=False)
                     if book_info is None:
                         msg = f"Sorry, but the book {message.text} was not found."
-                        self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
                         self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard, disable_web_page_preview=True)
                     else:
                         book_url = book_info["book_url"]
@@ -306,7 +287,6 @@ class Server:
                                 msg = book_info_from_db
                             else:
                                 msg = self.get_pretty_book_info(book_info)
-                            self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
                             self.send_message(chat_id=message.chat.id, text=msg, reply_markup=keyboard, parse_mode="HTML")
                         else:
                             self.logger.info(f"The user {message.chat.id} asked to add a subscription on the book {book_url}")
@@ -315,13 +295,11 @@ class Server:
                             keyboard = self.get_add_button_keyboard(book["_id"])
                             msg = "\n".join([f"{key}: {book_info[key]}" for key in book_info.keys() if key != "_id"])
                             msg = "The book info:\n" + msg
-                            self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
                             self.send_message(chat_id=message.chat.id, text=msg, reply_markup=keyboard)
 
                 except BookRequesterException as ex:
                     self.logger.info(f"A book from link {message.text} was not found by the Requester.")
                     msg = "Sorry, but the book was not found or maybe the link is not for one of the valid platform."
-                    self.logger.info(f"Sending to the user {message.chat.id} message: {msg}")
                     self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard)
                 except StoreApiException as ex:
                     self.logger.error(f"An exception occurred when executed 'insert_link' for the user: {message.chat.id}")
@@ -453,7 +431,7 @@ class Server:
         new_keyboard.add(telebot.types.InlineKeyboardButton(button_text, callback_data=new_callback_data))
         return new_keyboard
 
-    def send_message(self, text, **kwargs):
+    def send_message(self, chat_id, text, **kwargs):
         bottom = 0
         top = 0
         while bottom < len(text):
@@ -462,14 +440,14 @@ class Server:
                 result = text[bottom:]
             else:
                 top = bottom + min(variables.TELEGRAM_MESSAGE_MAX_LENGTH, len(text) - bottom)
-                result = " ".join(text[bottom:top].split()[0:-1])
+                result = " ".join(text[bottom:top].split(" ")[0:-1])
             if len(result) == 0:
                 result = text[bottom:top]
 
             # print(f"TOP: {top}, BOTTOM: {bottom}, text: {result}")
             bottom = bottom + len(result) + 1
-
-            self.bot.send_message(text=result, **kwargs)
+            self.logger.info(f"Sending to the user {chat_id} a message: {result}")
+            self.bot.send_message(chat_id=chat_id, text=result, **kwargs)
 
 if __name__ == "__main__":
     with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:
