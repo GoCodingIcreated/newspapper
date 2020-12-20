@@ -388,7 +388,10 @@ class Server:
         subscriptions = self.db.get_subscriptions(str(user_id))
         output = ""
         for book_url in subscriptions.keys():
-            output += self.get_book_info(subscriptions, book_url)
+            book_info = self.get_book_info(subscriptions, book_url)
+            if book_info is None:
+                continue
+            output += book_info
         output = "<b>Subscriptions:</b>\n\n" + output
 
         return output
