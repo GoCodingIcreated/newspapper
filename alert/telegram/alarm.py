@@ -15,6 +15,7 @@ from store.store_api import StoreApiException
 
 
 class TelegramAlarm:
+
     def __init__(self):
         self.logger = logging.getLogger("TelegramAlarm")
         self.logger.info("Creating TelegramAlarm")
@@ -64,61 +65,70 @@ class TelegramAlarm:
         self.logger.info(f"Run alarm.")
         try:
             for user in self.db.get_users():
-                is_user_modified = False
-                if user.get("pause") == True:
-                    self.logger.info(f"User {user['chat_id']} paused his notifications")
-                    continue
-                for book_url in user["books"].keys():
-                    book = user["books"][book_url]
-                    if book.get("pause", True):
-                        self.logger.info(f"User {user['chat_id']} paused his notifications for book {book}")
-                        continue
-                    item = self.db.get_item_by_book(book)
-                    if item is None:
-                        self.logger.warning(f"Book {book} has no item")
-                        continue
-                    if book.get("inc_field") is None or book["inc_field"] < item["inc_field"]:
-                        is_user_modified = True
-                        self.logger.info(f"Updating book for user: {user['chat_id']}, old book: {book}, item: {item}")
-                        book["inc_field"] = item["inc_field"]
-                        book["platform"] = item["source_crawler"]
-                        book["description"] = item.get("description")
-                        book["name"] = item.get("name")
-                        book["last_modify_dttm"] = item.get("last_modify_dttm")
-                        book["processed_dttm"] = item.get("processed_dttm")
-                        item_last_chapter_index = item.get("last_chapter_index", 0) \
-                            if item.get("last_chapter_index", 0) is not None \
-                            else 0
-                        book_last_chapter_index = book.get("last_chapter_index", 0) \
-                            if book.get("last_chapter_index", 0) is not None \
-                            else 0
-                        diff_last_chapter_index = int(item_last_chapter_index) - int(book_last_chapter_index)
-                        book["diff_last_chapter_index"] = diff_last_chapter_index
-                        book["last_chapter_index"] = item.get("last_chapter_index")
-                        item_last_pages_number = item.get("last_pages_number", 0)\
-                            if item.get("last_pages_number", 0) is not None\
-                            else 0
-                        book_last_pages_number = book.get("last_pages_number", 0)\
-                            if book.get("last_pages_number", 0) is not None\
-                            else 0
-                        diff_last_pages_number = int(item_last_pages_number) - int(book_last_pages_number)
-                        book["diff_last_pages_number"] = diff_last_pages_number
-                        book["last_pages_number"] = item.get("last_pages_number")
-                        book["last_relative_modify_dttm"] = item.get("last_relative_modify_dttm")
-                        fmt = self.db.get_platform_representaion(book["platform"])
-                        self.send_alarm(user["chat_id"], fmt, item, book)
-
-                if is_user_modified:
-                    self.logger.info(f"Updating user: {user}")
-                    self.db.update_user_alerts(user)
-                else:
-                    self.logger.info(f"Nothing to update for user: {user}")
+                self.process_user(user)
 
         except StoreApiException as ex:
             self.logger.critical(f"There is exception occurred during communication with DB")
             self.logger.exception(ex)
 
         self.logger.info(f"Finish alarm.")
+
+    def process_book(self, user, book):
+        if book.get("pause", True):
+            self.logger.info(f"User {user['chat_id']} paused his notifications for book {book}")
+            return False
+        item = self.db.get_item_by_book(book)
+        if item is None:
+            self.logger.warning(f"Book {book} has no item")
+            return False
+        if book.get("inc_field") is None or book["inc_field"] < item["inc_field"]:
+            self.logger.info(f"Updating book for user: {user['chat_id']}, old book: {book}, item: {item}")
+            book["inc_field"] = item["inc_field"]
+            book["platform"] = item["source_crawler"]
+            book["description"] = item.get("description")
+            book["name"] = item.get("name")
+            book["last_modify_dttm"] = item.get("last_modify_dttm")
+            book["processed_dttm"] = item.get("processed_dttm")
+            item_last_chapter_index = item.get("last_chapter_index", 0) \
+                if item.get("last_chapter_index", 0) is not None \
+                else 0
+            book_last_chapter_index = book.get("last_chapter_index", 0) \
+                if book.get("last_chapter_index", 0) is not None \
+                else 0
+            diff_last_chapter_index = int(item_last_chapter_index) - int(book_last_chapter_index)
+            book["diff_last_chapter_index"] = diff_last_chapter_index
+            book["last_chapter_index"] = item.get("last_chapter_index")
+            item_last_pages_number = item.get("last_pages_number", 0) \
+                if item.get("last_pages_number", 0) is not None \
+                else 0
+            book_last_pages_number = book.get("last_pages_number", 0) \
+                if book.get("last_pages_number", 0) is not None \
+                else 0
+            diff_last_pages_number = int(item_last_pages_number) - int(book_last_pages_number)
+            book["diff_last_pages_number"] = diff_last_pages_number
+            book["last_pages_number"] = item.get("last_pages_number")
+            book["last_relative_modify_dttm"] = item.get("last_relative_modify_dttm")
+            fmt = self.db.get_platform_representaion(book["platform"])
+            self.send_alarm(user["chat_id"], fmt, item, book)
+            return True
+        else:
+            # TODO: update last_update etc..
+            return False
+
+    def process_user(self, user, force_notification=False):
+        is_user_modified = False
+        if user.get("pause") == True and force_notification == False:
+            self.logger.info(f"User {user['chat_id']} paused his notifications")
+            return
+        for book_url in user["books"].keys():
+            book = user["books"][book_url]
+            is_user_modified = is_user_modified or self.process_book(user, book)
+
+        if is_user_modified:
+            self.logger.info(f"Updating user: {user}")
+            self.db.update_user_alerts(user)
+        else:
+            self.logger.info(f"Nothing to update for user: {user}")
 
 
 if __name__ == "__main__":

@@ -281,7 +281,7 @@ class StoreApi:
         tracks = self.users_table.find_one({"chat_id": chat_id})["books"]
         self.logger.debug(f"chat_id: {chat_id}, tracks: {tracks}")
 
-        books = tracks.values()
+        books = tracks
 
         self.logger.debug(f"chat_id: {chat_id}, book: {books}")
         return books
@@ -467,7 +467,6 @@ class StoreApi:
     def get_users(self):
         return list(self.users_table.find())
 
-
     def get_platform_representaion(self, platform):
         self.logger.debug(f"platform: {platform}")
         return self.representation_table.find_one({"platform": platform})["format"]
@@ -499,7 +498,6 @@ class StoreApi:
             user_in_db["books"][book_url]["pause"] = True
             self.users_table.replace_one({"chat_id": user["chat_id"]}, user_in_db)
 
-
     def user_unpause_book(self, user, book_url):
         self.logger.debug(f"user: {user}, book_url: {book_url}")
         user_in_db = self.users_table.find_one({"chat_id": user["chat_id"]})
@@ -508,6 +506,12 @@ class StoreApi:
         else:
             user_in_db["books"][book_url]["pause"] = False
             self.users_table.replace_one({"chat_id": user["chat_id"]}, user_in_db)
+
+    def get_user(self, chat_id):
+        self.logger.debug(f"chat_id: {chat_id}")
+        user_in_db = self.users_table.find_one({"chat_id": chat_id})
+        return user_in_db
+
 
 if __name__ == "__main__":
     with open(variables.LOGGING_CONF_FILE_PATH, "r") as f:

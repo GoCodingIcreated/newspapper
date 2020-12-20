@@ -17,6 +17,8 @@ from store.store_api import StoreApi
 import alert.book_requesters.requester as requester
 from alert.book_requesters.requester import BookRequesterException
 
+import alert.telegram.alarm as alarm
+
 
 class Server:
     NOT_ALLOWED = "Not allowed"
@@ -102,15 +104,22 @@ class Server:
                     if message.text == "/pause":
                         self.db.user_pause_alerts({"chat_id": str(message.chat.id)})
                         msg = "Paused notifications for books"
+                        self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
+                        self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard,
+                                          disable_web_page_preview=True)
                     elif message.text == "/unpause":
+                        telegram_alarm = alarm.TelegramAlarm()
+
                         self.db.user_unpause_alerts({"chat_id": str(message.chat.id)})
                         msg = "Unpaused notifications for books"
+                        self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
+                        self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard,
+                                          disable_web_page_preview=True)
+                        telegram_alarm.process_user(self.db.get_user(str(message.chat.id)), force_notification=True)
                     else:
                         self.logger.critical(f"Unknown command: {message.text}")
                         return
-                    self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-                    self.send_message(chat_id=message.chat.id, text=msg, reply_markup=remove_keyboard,
-                                          disable_web_page_preview=True)
+
 
                 except StoreApiException as ex:
                     self.logger.error(
@@ -289,11 +298,16 @@ class Server:
                         book_url = book_info["book_url"]
                         if self.db.is_subscribed_on_book(message.chat.id, book_url):
                             self.logger.info(f"The user {message.chat.id} asked to remove a subscription on the book {book_url}")
+
                             keyboard = self.get_remove_button_keyboard(book_info["_id"])
-                            msg = "\n".join([f"{key}: {book_info[key]}" for key in book_info.keys() if key != "_id"])
-                            msg = "The book info:\n" + msg
+                            book_info_from_db = self.get_book_info(self.db.get_subscriptions(message.chat.id), book_url)
+
+                            if book_info_from_db is not None:
+                                msg = book_info_from_db
+                            else:
+                                msg = self.get_pretty_book_info(book_info)
                             self.logger.info(f"Sending to the user {message.chat.id} a message: {msg}")
-                            self.send_message(chat_id=message.chat.id, text=msg, reply_markup=keyboard)
+                            self.send_message(chat_id=message.chat.id, text=msg, reply_markup=keyboard, parse_mode="HTML")
                         else:
                             self.logger.info(f"The user {message.chat.id} asked to add a subscription on the book {book_url}")
                             self.db.add_book(book_info)
@@ -323,24 +337,58 @@ class Server:
     def start_polling(self):
         self.bot.polling()
 
-    def get_subscription_list(self, user_id):
+    def get_pretty_book_info(self, sub):
         MAX_DESCRIPTION_LENGTH = 128
-        subscriptions = list(self.db.get_subscriptions(str(user_id)))
-        output = ""
-        for num, sub in enumerate(subscriptions, start=1):
+
+        url = ""
+        if sub.get('book_url') is not None:
             url = sub['book_url'] + "\n"
+
+        description = ""
+        if sub.get('description') is not None:
             if len(sub['description']) < MAX_DESCRIPTION_LENGTH:
                 description = self.escape_characters(sub['description']) + "\n"
             else:
-                description = " ".join(self.escape_characters(sub['description'])[0:MAX_DESCRIPTION_LENGTH + 1].split()[0:-1]) + "...\n"
-            last_update = f"<b>Last update</b>: {sub['last_modify_dttm']}\n"
-            last_chapter_index_str = ""
-            if sub.get('last_chapter_index') is not None:
-                last_chapter_index_str = f"<b>Total chapters</b>: {sub['last_chapter_index']}\n"
-            last_pages_number_str = ""
-            if sub.get('last_pages_number') is not None:
-                last_pages_number_str = f"<b>Total pages</b>: {sub['last_pages_number']}\n"
-            output += f"{url}{last_update}{last_chapter_index_str}{last_pages_number_str}{description}\n"
+                description = " ".join(
+                    self.escape_characters(sub['description'])[0:MAX_DESCRIPTION_LENGTH + 1].split()[0:-1]) + "...\n"
+
+        last_update = ""
+        if sub["platform"] == 'author.today' and sub.get('last_modify_dttm') is not None:
+            last_update = f"<b>Last update:</b> {sub['last_modify_dttm']}\n"
+
+        last_fetch = ""
+        if sub.get('processed_dttm') is not None:
+            last_fetch = f"<b>Last fetch:</b> {sub['processed_dttm']}\n"
+
+        last_chapter_index_str = ""
+        if sub.get('last_chapter_index') is not None:
+            last_chapter_index_str = f"<b>Total chapters</b>: {sub['last_chapter_index']}\n"
+
+        last_pages_number_str = ""
+        if sub.get('last_pages_number') is not None:
+            last_pages_number_str = f"<b>Total pages</b>: {sub['last_pages_number']}\n"
+
+        return f"{url}{last_update}{last_fetch}{last_chapter_index_str}{last_pages_number_str}{description}\n"
+
+    def get_book_info(self, subscriptions, book_url):
+        if subscriptions.get(book_url) is None:
+            return None
+
+        sub = subscriptions[book_url]
+        if sub.get('description') is None\
+                or sub.get('platform') is None\
+                or sub.get('processed_dttm') is None\
+                or sub.get('book_url') is None:
+            return None
+
+        return self.get_pretty_book_info(sub)
+
+    def get_subscription_list(self, user_id):
+
+        subscriptions = self.db.get_subscriptions(str(user_id))
+        output = ""
+        for book_url in subscriptions.keys():
+            output += self.get_book_info(subscriptions, book_url)
         output = "<b>Subscriptions:</b>\n\n" + output
 
         return output
